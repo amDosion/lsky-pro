@@ -1,0 +1,20 @@
+{
+  "phase": "self_research",
+  "current_cycle": "cycle-1.1",
+  "project_dir": "/opt/1panel/apps/lsky-pro",
+  "completed_summary": {
+    "delivered": [
+      "advanced-api/ai/config/models",
+      "advanced-api/performance/summary",
+      "images toolbar batch delete preview/execute/rollback",
+      "advanced/performance page"
+    ],
+    "validation": [
+      "phpunit AdvancedFeaturePagesTest passed in php83 container mount",
+      "route:list includes new advanced-api routes",
+      "php -l passed on changed php files"
+    ]
+  },
+  "next_queue": "queue/tasks.csv",
+  "selected_next_direction": "AI intelligence foundation"
+}

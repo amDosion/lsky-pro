@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-03-08T23:58:01.364Z",
+  "label": "latest",
+  "projectDir": "/opt/1panel/apps/lsky-pro",
+  "output": "/opt/1panel/apps/lsky-pro/queue/evals/trace-dataset.jsonl",
+  "manifestOutput": "/opt/1panel/apps/lsky-pro/queue/evals/trace-manifest.json",
+  "recordCount": 0,
+  "traceKinds": {},
+  "statuses": {},
+  "reviewGateStatus": null,
+  "latestPlannerSessionId": null,
+  "latestReviewSessionId": null,
+  "checkpointPath": "/opt/1panel/apps/lsky-pro/queue/checkpoints/latest.json",
+  "summaryPath": "/opt/1panel/apps/lsky-pro/queue/runs/summary-last.json",
+  "note": "Trace grading works best when traces are exported consistently across runs. This manifest summarizes the current JSONL export."
+}

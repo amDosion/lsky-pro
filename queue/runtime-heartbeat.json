@@ -1,0 +1,11 @@
+{
+  "updated_at": "2026-03-08T23:59:30Z",
+  "active_lanes": [],
+  "totals": {
+    "pending": 11,
+    "running": 0,
+    "success": 0,
+    "blocked": 0,
+    "failed": 0
+  }
+}

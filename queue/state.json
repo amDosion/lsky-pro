@@ -1,0 +1,10 @@
+{
+  "queue_file": "queue/tasks.csv",
+  "tasks_total": 11,
+  "pending": 11,
+  "running": 0,
+  "success": 0,
+  "blocked": 0,
+  "failed": 0,
+  "current_phase": "next_queue_ready"
+}

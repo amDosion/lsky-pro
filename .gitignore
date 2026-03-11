@@ -1,0 +1,52 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Storage (uploads, cache, logs)
+/storage/app/
+/storage/debugbar/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/logs/
+
+# Database files
+*.sqlite
+*.sqlite-journal
+/database/*.sqlite
+
+# PHP & test cache
+.phpunit.cache/
+.phpunit.result.cache
+/test-results/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/public/hot
+/public/storage
+/public/build/
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Misc
+installed.lock
+composer-setup.php
+*.bak
+
+# Claude Code
+.claude/
+
+.env.testing

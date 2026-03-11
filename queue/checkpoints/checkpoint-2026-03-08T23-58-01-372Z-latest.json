@@ -1,0 +1,149 @@
+{
+  "generatedAt": "2026-03-08T23:58:01.372Z",
+  "label": "latest",
+  "projectDir": "/opt/1panel/apps/lsky-pro",
+  "mission": "",
+  "runtimeConfig": null,
+  "mainAgent": {
+    "nextSession": null,
+    "successStreak": 0,
+    "pendingPlan": null,
+    "queueFingerprint": null,
+    "lastCompletedQueueFingerprint": null,
+    "lastPlanning": null,
+    "lastExecution": null
+  },
+  "reviewGate": null,
+  "totals": {
+    "tasks": 0,
+    "pending": 0,
+    "running": 0,
+    "success": 0,
+    "blocked": 0,
+    "failed": 0
+  },
+  "unresolvedTasks": [
+    {
+      "taskId": "PO-201",
+      "title": "第二轮范围与验收拆解",
+      "role": "project_owner",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "PO-202",
+      "title": "第二轮队列固化",
+      "role": "project_owner",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "BE-201",
+      "title": "图像智能分析任务与数据契约",
+      "role": "backend",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "BE-202",
+      "title": "AI 检索与 Prompt V2 骨架",
+      "role": "backend",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "FE-201",
+      "title": "管理设置页 IA 与重构外壳",
+      "role": "frontend",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "FE-202",
+      "title": "登录矩阵与 Passkey UX 外壳",
+      "role": "frontend",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "OP-201",
+      "title": "AI 分析任务调度与运行方案",
+      "role": "devops",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "QA-201",
+      "title": "第二轮回归策略与新增测试计划",
+      "role": "qa",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "SE-201",
+      "title": "Passkey 与图像分析安全审查",
+      "role": "security",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "RV-201",
+      "title": "第二轮评审门禁",
+      "role": "reviewer",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    },
+    {
+      "taskId": "PO-203",
+      "title": "下一轮再规划",
+      "role": "project_owner",
+      "status": "pending",
+      "lastError": null,
+      "attempts": 0,
+      "recoveryAttempts": 0,
+      "sessionId": null
+    }
+  ],
+  "recentHistory": [],
+  "resumeHandles": {
+    "plannerSessionId": null,
+    "reviewSessionId": null,
+    "tasks": []
+  },
+  "files": {
+    "mainAgentStatePath": null,
+    "statePath": null,
+    "summaryPath": null,
+    "tasksPath": "/opt/1panel/apps/lsky-pro/queue/tasks.csv"
+  }
+}
