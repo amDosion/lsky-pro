@@ -32,6 +32,12 @@
                             <div id="{{ $id('loading') }}" class="images-carousel-loading"></div>
                         @endif
                         <img id="{{ $id('img') }}" class="images-carousel-img" src="" alt="">
+                        <div class="images-carousel-zoom-controls">
+                            <button type="button" class="zoom-btn" data-zoom="in" title="放大"><i class="fas fa-search-plus"></i></button>
+                            <button type="button" class="zoom-btn" data-zoom="out" title="缩小"><i class="fas fa-search-minus"></i></button>
+                            <button type="button" class="zoom-btn" data-zoom="reset" title="还原"><i class="fas fa-expand"></i></button>
+                            <button type="button" class="zoom-btn" data-zoom="original" title="查看原图"><i class="fas fa-external-link-alt"></i></button>
+                        </div>
                         @if ($showCropLayer)
                             <div id="{{ $id('crop-layer') }}" class="images-carousel-crop-layer">
                                 <div id="{{ $id('crop-box') }}" class="images-carousel-crop-box">
@@ -65,21 +71,13 @@
             <aside class="images-carousel-side">
                 <div class="images-carousel-side-head">
                     <div class="images-carousel-side-meta">
-                        @if ($showIndex || $showStatus)
-                            <div class="images-carousel-side-badges">
-                                @if ($showIndex)
-                                    <div id="{{ $id('index') }}" class="images-carousel-index"></div>
-                                @endif
-                                @if ($showStatus)
-                                    <div id="{{ $id('status') }}" class="images-carousel-status"></div>
-                                @endif
-                            </div>
+                        @if ($showIndex)
+                            <div id="{{ $id('index') }}" class="images-carousel-index"></div>
                         @endif
-                        @if ($showTop)
-                            <div id="{{ $id('top') }}" class="images-carousel-top"></div>
-                        @else
-                            <div class="images-carousel-top hidden"></div>
+                        @if ($showStatus)
+                            <div id="{{ $id('status') }}" class="images-carousel-status" style="display:none"></div>
                         @endif
+                        <div id="{{ $id('top') }}" class="images-carousel-top" style="display:none"></div>
                     </div>
                     <button type="button" class="images-carousel-side-close" id="{{ $id('close') }}"><i class="fas fa-times"></i></button>
                 </div>

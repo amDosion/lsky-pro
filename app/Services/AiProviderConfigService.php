@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Enums\ConfigKey;
+use App\Models\User;
 use App\Models\Config;
 use App\Utils;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class AiProviderConfigService
@@ -89,14 +91,7 @@ class AiProviderConfigService
 
     public function active(): array
     {
-        $config = $this->all();
-        $activeProvider = (string) $config['active_provider'];
-        $provider = $config['providers'][$activeProvider] ?? null;
-        if (! $provider) {
-            throw new \RuntimeException('AI 提供商配置不存在');
-        }
-
-        return $provider;
+        return $this->activeForUser();
     }
 
     public function save(array $payload): array
@@ -203,6 +198,166 @@ class AiProviderConfigService
             'count' => count($models),
             'fetched_at' => now()->toDateTimeString(),
         ];
+    }
+
+
+    /**
+     * Get all AI provider configs for a specific user.
+     * Falls back to global config if user has no personal settings.
+     */
+    public function allForUser(User $user): array
+    {
+        $userConfigs = $user->configs;
+        $storedArray = $userConfigs->get('ai_provider_settings');
+
+        // If user has no personal AI config, fall back to global config
+        if (empty($storedArray) || !is_array($storedArray)) {
+            return $this->all();
+        }
+
+        $activeProvider = strtolower(trim((string) $userConfigs->get('ai_provider', 'gpt')));
+
+        $providers = [];
+        foreach (self::PROVIDER_META as $provider => $meta) {
+            $saved = is_array($storedArray[$provider] ?? null) ? $storedArray[$provider] : [];
+            $models = $this->normalizeModels($saved['models'] ?? $meta['models']);
+            if ($models === []) {
+                $models = $meta['models'];
+            }
+
+            $defaultModel = trim((string) ($saved['default_model'] ?? ''));
+            if ($defaultModel === '' || ! in_array($defaultModel, $models, true)) {
+                $defaultModel = $models[0] ?? '';
+            }
+
+            $providers[$provider] = [
+                'provider' => $provider,
+                'label' => $meta['label'],
+                'transport' => $meta['transport'],
+                'base_url' => trim((string) ($saved['base_url'] ?? $meta['base_url'])) ?: $meta['base_url'],
+                'api_key' => trim((string) ($saved['api_key'] ?? '')),
+                'default_model' => $defaultModel,
+                'models' => $models,
+                'remote_models' => $this->normalizeModels($saved['remote_models'] ?? []),
+                'remote_models_synced_at' => trim((string) ($saved['remote_models_synced_at'] ?? '')) ?: null,
+                'ready' => trim((string) ($saved['api_key'] ?? '')) !== '' && $defaultModel !== '',
+            ];
+        }
+
+        if (! isset($providers[$activeProvider])) {
+            $activeProvider = array_key_first($providers) ?: 'gpt';
+        }
+
+        return [
+            'active_provider' => $activeProvider,
+            'providers' => $providers,
+            'provider_options' => collect($providers)->map(fn (array $item) => [
+                'provider' => $item['provider'],
+                'label' => $item['label'],
+                'ready' => $item['ready'],
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Save a single provider's config for a specific user.
+     */
+    public function saveProviderForUser(User $user, string $providerKey, array $providerData): array
+    {
+        if (! isset(self::PROVIDER_META[$providerKey])) {
+            throw new \InvalidArgumentException('不支持的 AI 提供商');
+        }
+
+        $meta = self::PROVIDER_META[$providerKey];
+        $configs = $user->configs->toArray();
+        $settings = is_array($configs['ai_provider_settings'] ?? null) ? $configs['ai_provider_settings'] : [];
+
+        $existing = is_array($settings[$providerKey] ?? null) ? $settings[$providerKey] : [];
+
+        $models = $this->normalizeModels($providerData['models'] ?? $existing['models'] ?? $meta['models']);
+        if ($models === []) {
+            $models = $meta['models'];
+        }
+
+        $defaultModel = trim((string) ($providerData['default_model'] ?? ''));
+        if ($defaultModel === '' || ! in_array($defaultModel, $models, true)) {
+            $defaultModel = $models[0] ?? '';
+        }
+
+        $settings[$providerKey] = [
+            'api_key' => trim((string) ($providerData['api_key'] ?? '')),
+            'base_url' => trim((string) ($providerData['base_url'] ?? $meta['base_url'])) ?: $meta['base_url'],
+            'default_model' => $defaultModel,
+            'models' => $models,
+            'remote_models' => $this->normalizeModels($providerData['remote_models'] ?? ($existing['remote_models'] ?? [])),
+            'remote_models_synced_at' => trim((string) ($providerData['remote_models_synced_at'] ?? ($existing['remote_models_synced_at'] ?? ''))) ?: null,
+        ];
+
+        if (empty($configs['ai_provider'])) {
+            $configs['ai_provider'] = $providerKey;
+        }
+
+        $configs['ai_provider_settings'] = $settings;
+        $user->configs = collect($configs);
+        $user->save();
+
+        return $this->allForUser($user);
+    }
+
+    /**
+     * Set the active AI provider for a specific user.
+     */
+    public function setActiveProviderForUser(User $user, string $providerKey): array
+    {
+        if (! isset(self::PROVIDER_META[$providerKey])) {
+            throw new \InvalidArgumentException('不支持的 AI 提供商');
+        }
+
+        $configs = $user->configs->toArray();
+        $configs['ai_provider'] = $providerKey;
+
+        // Initialize settings from global if user has none yet
+        if (empty($configs['ai_provider_settings'])) {
+            $globalConfig = $this->all();
+            $settings = [];
+            foreach ($globalConfig['providers'] as $p => $item) {
+                $settings[$p] = [
+                    'api_key' => $item['api_key'] ?? '',
+                    'base_url' => $item['base_url'] ?? '',
+                    'default_model' => $item['default_model'] ?? '',
+                    'models' => $item['models'] ?? [],
+                    'remote_models' => $item['remote_models'] ?? [],
+                ];
+            }
+            $configs['ai_provider_settings'] = $settings;
+        }
+
+        $user->configs = collect($configs);
+        $user->save();
+
+        return $this->allForUser($user);
+    }
+
+    /**
+     * Get the active provider config, user-aware.
+     * Falls back to global config when no user is authenticated.
+     */
+    public function activeForUser(?User $user = null): array
+    {
+        $user = $user ?? Auth::user();
+        if ($user) {
+            $config = $this->allForUser($user);
+        } else {
+            $config = $this->all();
+        }
+
+        $activeProvider = (string) $config['active_provider'];
+        $provider = $config['providers'][$activeProvider] ?? null;
+        if (! $provider) {
+            throw new \RuntimeException('AI 提供商配置不存在');
+        }
+
+        return $provider;
     }
 
     private function fetchOpenAiCompatibleModels(string $baseUrl, string $apiKey): array

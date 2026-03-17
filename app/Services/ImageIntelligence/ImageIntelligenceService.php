@@ -6,6 +6,7 @@ use App\Jobs\AnalyzeImageIntelligenceJob;
 use App\Models\Image;
 use App\Models\ImageIntelligenceRecord;
 use App\Services\ImageIntelligence\ProviderBackedImageIntelligenceAnalyzer;
+use App\Services\ImageIntelligence\LocalImageIntelligenceAnalyzer;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 
@@ -15,7 +16,8 @@ class ImageIntelligenceService
 
     public function __construct(
         private readonly ImageIntelligenceTermProjectionService $termProjectionService,
-        private readonly ProviderBackedImageIntelligenceAnalyzer $providerBackedAnalyzer
+        private readonly ProviderBackedImageIntelligenceAnalyzer $providerBackedAnalyzer,
+        private readonly LocalImageIntelligenceAnalyzer $localAnalyzer
     ) {
     }
 
@@ -95,15 +97,12 @@ class ImageIntelligenceService
      */
     private function buildPayload(Image $image): array
     {
-        $providerSnapshot = $this->providerBackedAnalyzer->activeProviderSnapshot();
-        if (! (bool) ($providerSnapshot['ready'] ?? false)) {
-            return $this->buildPlaceholderPayload($image, 'provider_not_ready', $providerSnapshot);
-        }
-
+        // Default: use local intelligence (MobileNetV2 + Tesseract OCR)
         try {
-            return $this->providerBackedAnalyzer->analyze($image);
+            return $this->localAnalyzer->analyze($image);
         } catch (\Throwable $e) {
-            return $this->buildPlaceholderPayload($image, $e->getMessage(), $providerSnapshot);
+            // Local analysis failed, fall back to placeholder
+            return $this->buildPlaceholderPayload($image, 'local_analysis_failed: ' . $e->getMessage());
         }
     }
 

@@ -44,9 +44,145 @@
             background: #e2e8f0;
         }
 
+        .images-v2 .albums-tree-action.share {
+            color: #2563eb;
+            background: #dbeafe;
+        }
+
         .images-v2 .albums-tree-action.delete {
             color: #b91c1c;
             background: #fee2e2;
+        }
+
+        /* Share dialog modal */
+        .share-dialog-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .share-dialog-panel {
+            background: #fff;
+            border-radius: 12px;
+            width: 480px;
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,.15);
+        }
+        .share-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .share-dialog-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .share-dialog-close {
+            width: 26px;
+            height: 26px;
+            border: 0;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+        .share-dialog-close:hover { background: #e2e8f0; }
+        .share-dialog-body { padding: 14px 18px; overflow-y: auto; flex: 1; }
+        .share-dialog-section { margin-bottom: 14px; }
+        .share-dialog-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .share-user-search {
+            width: 100%;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0 10px;
+            font-size: 12px;
+            outline: none;
+            box-shadow: none;
+        }
+        .share-user-search:focus {
+            border-color: #93c5fd;
+            box-shadow: none;
+            --tw-ring-shadow: 0 0 #0000;
+        }
+        .share-user-results {
+            margin-top: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            display: none;
+        }
+        .share-user-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #334155;
+            cursor: pointer;
+            border-bottom: 1px solid #f8fafc;
+        }
+        .share-user-option:last-child { border-bottom: 0; }
+        .share-user-option:hover { background: #f1f5f9; }
+        .share-user-option .user-email { color: #94a3b8; font-size: 11px; }
+        .share-current-list { display: flex; flex-direction: column; gap: 4px; }
+        .share-current-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .share-current-name { flex: 1; color: #334155; }
+        .share-current-perm {
+            font-size: 10px;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .share-current-remove {
+            width: 20px;
+            height: 20px;
+            border: 0;
+            border-radius: 4px;
+            background: #fee2e2;
+            color: #b91c1c;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+        }
+        .share-current-remove:hover { background: #fecaca; }
+        .share-no-users {
+            padding: 12px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
         }
 
         .images-v2 .albums-tree-item.active {
@@ -497,41 +633,61 @@
 @endpush
 
 <x-app-layout>
-    <div class="images-v2">
-            <aside class="images-aside">
-                @include('user.images.partials.aside-head')
-                <div id="albums-tree-list" class="images-tree-list"></div>
-            </aside>
+    <x-images-workspace
+        id-prefix="images"
+        root-class="images-v2"
+        sidebar-tag="aside"
+        stage-id="images-scroll"
+        stage-class="relative inset-0 h-full overflow-y-auto select-none"
+        :show-sidebar="true"
+        :show-pagination="true"
+    >
+        <x-slot:sidebarHead>
+            @include('user.images.partials.aside-head')
+        </x-slot:sidebarHead>
 
-            <div class="images-main">
-                @include('user.images.partials.toolbar')
-                <div id="images-scroll" class="images-stage relative inset-0 h-full overflow-y-auto select-none">
-                    <x-images-loading-skeleton id="images-loading" :show="true" />
-                    <div id="images-grid" class="dragselect"></div>
-                    <div id="images-error" class="hidden p-4">
-                        <div class="images-error-state">
-                            <div class="images-error-title">图片列表加载失败</div>
-                            <div id="images-error-message" class="images-error-meta">当前请求没有成功返回数据。</div>
-                            <button type="button" id="images-retry" class="images-error-action">重新加载</button>
-                        </div>
-                    </div>
-                    <div id="images-empty" class="hidden p-4">
-                        <x-no-data message="这里还是空的～" />
-                    </div>
+        <x-slot:sidebarContent>
+            <div id="albums-tree-list" class="images-tree-list"></div>
+        </x-slot:sidebarContent>
+
+        <x-slot:toolbar>
+            @include('user.images.partials.toolbar')
+        </x-slot:toolbar>
+
+        <x-slot:stageContent>
+            <div id="images-grid" class="dragselect"></div>
+            <div id="images-error" class="hidden p-4">
+                <div class="images-error-state">
+                    <div class="images-error-title">图片列表加载失败</div>
+                    <div id="images-error-message" class="images-error-meta">当前请求没有成功返回数据。</div>
+                    <button type="button" id="images-retry" class="images-error-action">重新加载</button>
                 </div>
-                @include('user.images.partials.footer-pagination')
             </div>
-    </div>
-    @include('user.images.partials.carousel-shell')
-    <div id="drawer-mask" class="fixed hidden inset-0 bg-gray-500 bg-opacity-50 z-[40]" onclick="drawer.close()"></div>
-    <div id="drawer" class="fixed bg-white w-64 md:w-72 top-0 -right-[1000px] bottom-0 z-[41] flex flex-col transition-all duration-300">
-        <div class="flex justify-between items-center text-md px-3 py-1 border-b">
-            <span class="text-gray-600 truncate" id="drawer-title"></span>
-            <a href="javascript:drawer.close()" class="p-2"><i class="fas fa-times text-blue-500"></i></a>
-        </div>
-        <div id="drawer-content" class="overflow-y-auto"></div>
-    </div>
-    <input id="toolbar-upload-input" type="file" class="hidden" accept=".jpeg,.jpg,.png,.gif,.tif,.bmp,.ico,.psd,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.raw,.zip,.rar" multiple>
+            <div id="images-empty" class="hidden p-4">
+                <x-no-data message="这里还是空的～" />
+            </div>
+        </x-slot:stageContent>
+
+        <x-slot:pagination>
+            @include('user.images.partials.footer-pagination')
+        </x-slot:pagination>
+
+        <x-slot:carousel>
+            @include('user.images.partials.carousel-shell')
+        </x-slot:carousel>
+
+        <x-slot:extraContent>
+            <div id="drawer-mask" class="fixed hidden inset-0 bg-gray-500 bg-opacity-50 z-[40]" onclick="drawer.close()"></div>
+            <div id="drawer" class="fixed bg-white w-64 md:w-72 top-0 -right-[1000px] bottom-0 z-[41] flex flex-col transition-all duration-300">
+                <div class="flex justify-between items-center text-md px-3 py-1 border-b">
+                    <span class="text-gray-600 truncate" id="drawer-title"></span>
+                    <a href="javascript:drawer.close()" class="p-2"><i class="fas fa-times text-blue-500"></i></a>
+                </div>
+                <div id="drawer-content" class="overflow-y-auto"></div>
+            </div>
+            <input id="toolbar-upload-input" type="file" class="hidden" accept=".jpeg,.jpg,.png,.gif,.tif,.bmp,.ico,.psd,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.raw,.zip,.rar" multiple>
+        </x-slot:extraContent>
+    </x-images-workspace>
 
     <script type="text/html" id="images-item-tpl">
         <a href="javascript:void(0)" data-id="__id__" data-json='__json__' class="images-item relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent">
@@ -547,14 +703,14 @@
                     <p class="text-xs date" title="__human_date__">__date__</p>
                 </div>
             </div>
-            <img alt="__name__" data-original="__preview_url__" src="__thumb_url__" width="__width__" height="__height__">
+            <img alt="__name__" data-original="__preview_url__" src="__thumb_url__" width="__width__" height="__height__" loading="lazy">
         </a>
     </script>
 
     <script type="text/html" id="images-item-list-tpl">
         <div data-id="__id__" data-json='__json__' class="images-item relative cursor-default outline outline-2 outline-offset-2 outline-transparent">
             <div class="list-col list-thumb-wrap">
-                <img class="images-list-thumb" alt="__name__" data-original="__preview_url__" src="__thumb_url__" width="__width__" height="__height__">
+                <img class="images-list-thumb" alt="__name__" data-original="__preview_url__" src="__thumb_url__" width="__width__" height="__height__" loading="lazy">
             </div>
             <div class="list-col list-type"><div>__type__</div><div class="images-item-badges is-inline">__status_badges__</div></div>
             <div class="list-col list-url" title="__url__">
@@ -617,6 +773,7 @@
             <span class="albums-tree-name">__name__</span>
             <span class="albums-tree-count">__image_num__</span>
             <span class="albums-tree-item-actions">
+                <i class="fas fa-share-alt albums-tree-action share" title="共享"></i>
                 <i class="fas fa-pen albums-tree-action edit" title="重命名"></i>
                 <i class="fas fa-trash albums-tree-action delete" title="删除"></i>
             </span>
@@ -705,7 +862,29 @@
     </x-modal>
 
     @push('scripts')
-        <script src="{{ asset('js/justified-gallery/jquery.justifiedGallery.min.js') }}"></script>
+        {{-- Share dialog --}}
+    <div id="album-share-dialog" class="share-dialog-overlay" style="display:none;">
+        <div class="share-dialog-panel">
+            <div class="share-dialog-header">
+                <span class="share-dialog-title">共享相册: <span id="share-album-name"></span></span>
+                <button type="button" id="share-dialog-close" class="share-dialog-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="share-dialog-body">
+                <div class="share-dialog-section">
+                    <div class="share-dialog-label">添加共享用户</div>
+                    <input type="text" id="share-user-search" class="share-user-search" placeholder="搜索用户名或邮箱...">
+                    <div id="share-user-results" class="share-user-results"></div>
+                </div>
+                <div class="share-dialog-section">
+                    <div class="share-dialog-label">已共享用户</div>
+                    <div id="share-current-list" class="share-current-list"></div>
+                    <div id="share-no-users" class="share-no-users" style="display:none;">暂无共享用户</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ asset('js/justified-gallery/jquery.justifiedGallery.min.js') }}"></script>
         <script src="{{ asset('js/dragselect/ds.min.js') }}"></script>
         <script src="{{ asset('js/context-js/context-js.js') }}"></script>
         <script src="{{ asset('js/clipboard/index.browser.js') }}"></script>
@@ -732,6 +911,7 @@
             const IMAGES_PAGE_SIZE_KEY = 'lsky.images.page.size';
             const IMAGES_SEARCH_MODE_KEY = 'lsky.images.search.mode';
             const IMAGES_SELECTED_ALBUM_KEY = 'lsky.images.selected.album';
+            const IMAGES_INFINITE_SCROLL_KEY = 'lsky.images.infinite.scroll';
             const PAGE_SIZES = [50, 100, 150, 200];
             const MAX_PARALLEL_UPLOADS = 6;
             const {
@@ -801,6 +981,9 @@
             const $pageSize = $('#images-page-size');
             const $pageJump = $('#images-page-jump');
             const $pageGo = $('#images-page-go');
+            const $infiniteScrollToggle = $("#images-infinite-scroll");
+            let infiniteScrollEnabled = localStorage.getItem(IMAGES_INFINITE_SCROLL_KEY) === "true";
+            $infiniteScrollToggle.prop("checked", infiniteScrollEnabled);
             const batchDeletePreviewUrl = @json(route('advanced.api.images.batch-delete.preview'));
             const batchDeleteExecuteUrl = @json(route('advanced.api.images.batch-delete.execute'));
             const batchDeleteRollbackUrlTemplate = @json(route('advanced.api.images.batch-delete.rollback', ['batchId' => '__BATCH_ID__']));
@@ -824,6 +1007,7 @@
                 startRect: null,
                 pointerId: null,
             };
+            let carouselZoom = { scale: 1, translateX: 0, translateY: 0, dragging: false, startX: 0, startY: 0 };
             let imageSearchMode = localStorage.getItem(IMAGES_SEARCH_MODE_KEY) || 'normal';
             let imageFilters = {};
             let imagePagination = {
@@ -959,12 +1143,33 @@
                 const current = imagePagination.currentPage || 1;
                 const last = imagePagination.lastPage || 1;
                 const total = imagePagination.total || 0;
-                $pageInfo.text(`第 ${current} / ${last} 页，共 ${total} 条`);
-                $pagePrev.prop('disabled', imagesLoading || current <= 1);
-                $pageNext.prop('disabled', imagesLoading || current >= last);
-                $pageGo.prop('disabled', imagesLoading);
-                $pageSize.prop('disabled', imagesLoading);
+                if (infiniteScrollEnabled) {
+                    $pageInfo.text(`已加载 ${current} / ${last} 页，共 ${total} 条`);
+                    $pagePrev.hide();
+                    $pageNext.hide();
+                    $pageJump.hide();
+                    $("#images-page-jump-label").hide();
+                    $pageGo.hide();
+                } else {
+                    $pageInfo.text(`第 ${current} / ${last} 页，共 ${total} 条`);
+                    $pagePrev.show().prop("disabled", imagesLoading || current <= 1);
+                    $pageNext.show().prop("disabled", imagesLoading || current >= last);
+                    $pageJump.show();
+                    $("#images-page-jump-label").show();
+                    $pageGo.show().prop("disabled", imagesLoading);
+                }
+                $pageSize.prop("disabled", imagesLoading);
             };
+
+
+
+
+
+
+
+
+
+
 
             const fetchImagesPage = (params = {}, options = {}) => {
                 const append = Boolean(options.append);
@@ -1021,7 +1226,19 @@
                 return fetchImagesPage(merged);
             };
 
+            const applyCarouselZoom = () => {
+                const img = $carouselImg.get(0);
+                if (!img) return;
+                const {scale, translateX, translateY} = carouselZoom;
+                img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+                img.classList.toggle('is-zoomed', scale > 1);
+            };
+            const resetCarouselZoom = () => {
+                carouselZoom = {scale: 1, translateX: 0, translateY: 0, dragging: false, startX: 0, startY: 0};
+                applyCarouselZoom();
+            };
             const loadMoreImagesByScroll = () => {
+                if (!infiniteScrollEnabled) return;
                 if (imagesLoading) return;
                 if (imagePagination.currentPage >= imagePagination.lastPage) return;
                 const nextPage = imagePagination.currentPage + 1;
@@ -1043,7 +1260,7 @@
             const syncAlbumsTreeActive = () => {
                 $(ALBUM_TREE_ITEM).removeClass('active');
                 if (selectedAlbum.id !== undefined) {
-                    $albumsTree.find(`>a[data-id="${selectedAlbum.id}"]`).addClass('active');
+                    $albumsTree.find(`a[data-id="${selectedAlbum.id}"]`).addClass('active');
                 }
             };
 
@@ -1105,7 +1322,7 @@
                 const isAi = imageSearchMode === 'ai';
                 $searchModeToggle.toggleClass('is-ai', isAi);
                 $searchModeToggle.find('span').text(isAi ? 'AI检索' : '普通检索');
-                $('#search').attr('placeholder', isAi ? 'AI 检索：名称 / OCR / 标签...' : '输入关键字搜索...');
+                $('#search').attr('placeholder', isAi ? 'AI：标签/名称/OCR...' : '搜索...');
             };
 
             const applySearch = (keyword) => {
@@ -1706,6 +1923,7 @@
                 await ensureCarouselOriginalImage();
                 setCarouselCropMode(false);
                 $carouselLoading.addClass('show');
+                resetCarouselZoom();
                 $carouselImg.addClass('is-loading');
 
                 try {
@@ -1731,7 +1949,8 @@
                 const item = getCurrentCarouselItem();
                 if (!item) return Promise.resolve();
                 const currentSrc = String($carouselImg.attr('src') || '');
-                if (currentSrc === item.url || currentSrc === item.origin_url) {
+                const originalSrc = item.origin_url || item.url;
+                if (currentSrc === originalSrc) {
                     return Promise.resolve();
                 }
 
@@ -1741,7 +1960,7 @@
                     $carouselImg.one('load.carouselOriginal error.carouselOriginal', done);
                     setTimeout(done, 15000);
                     $carouselLoading.addClass('show');
-                    $carouselImg.addClass('is-loading').attr('src', item.url);
+                    $carouselImg.addClass('is-loading').attr('src', originalSrc);
                     revokeCarouselProcessedObjectUrl();
                 });
             };
@@ -1853,9 +2072,10 @@
                 revokeCarouselProcessedObjectUrl();
                 carouselIndex = normalizeCarouselIndex(carouselIndex, carouselItems.length);
                 const item = carouselItems[carouselIndex];
+                resetCarouselZoom();
                 $carouselImg.addClass('is-loading');
                 $carouselLoading.addClass('show');
-                $carouselImg.attr('src', item.url).attr('alt', item.filename || '');
+                $carouselImg.attr('src', item.origin_url || item.url).attr('alt', item.filename || '');
                 $carouselCaption.text(item.filename || '-');
                 const sizeText = item.size > 0 ? utils.formatSize(item.size * 1024) : '-';
                 const dimText = item.width > 0 && item.height > 0 ? `${item.width} × ${item.height}px` : '-';
@@ -1912,7 +2132,119 @@
                 renderCarousel();
             };
 
+
+            const renderAlbumTreeNodes = (albums, $container, depth) => {
+                const tplHtml = $('#albums-tree-item-tpl').html();
+                albums.forEach(function(album) {
+                    var itemHtml = tplHtml
+                        .replace(/__id__/g, album.id)
+                        .replace(/__name__/g, escapeHtml(album.name))
+                        .replace(/__intro__/g, escapeHtml(album.intro || ''))
+                        .replace(/__image_num__/g, album.image_num)
+                        .replace(/__json__/g, escapeHtml(JSON.stringify(album)).replace(/\$/g, '$$$$'));
+                    var $item = $(itemHtml);
+
+                    // Add indentation based on depth
+                    if (depth > 0) {
+                        $item.filter('a').css('padding-left', (12 + depth * 16) + 'px');
+                    }
+
+                    var hasChildren = album.children_recursive && album.children_recursive.length > 0;
+
+                    // Add toggle icon or placeholder before the name span
+                    var $nameEl = $item.filter('a').find('.albums-tree-name');
+                    if (hasChildren) {
+                        $('<i class="fas fa-chevron-right albums-tree-toggle is-open"></i>').insertBefore($nameEl);
+                    } else {
+                        $('<span class="albums-tree-toggle-placeholder"></span>').insertBefore($nameEl);
+                    }
+
+                    $container.append($item);
+
+                    // Recursively render children
+                    if (hasChildren) {
+                        var $childContainer = $('<div class="albums-tree-children"></div>');
+                        renderAlbumTreeNodes(album.children_recursive, $childContainer, depth + 1);
+                        $container.append($childContainer);
+                    }
+                });
+            };
+
+            const flattenAlbumsTree = (albums, depth) => {
+                depth = depth || 0;
+                var result = [];
+                albums.forEach(function(album) {
+                    result.push({id: album.id, name: album.name, depth: depth});
+                    if (album.children_recursive && album.children_recursive.length > 0) {
+                        result = result.concat(flattenAlbumsTree(album.children_recursive, depth + 1));
+                    }
+                });
+                return result;
+            };
+
+            let cachedAlbumsTreeData = [];
+
             const loadAlbumsTree = (page = 1, append = false, options = {}) => {
+                const skipImagesReset = Boolean(options.skipImagesReset);
+                if (!append) {
+                    $albumsTree.html('');
+                }
+
+                axios.get('{{ route("user.albums") }}', { params: { tree: 1 } })
+                    .then(function(response) {
+                        if (!response.data.status) return;
+
+                        var albums = response.data.data.albums || [];
+                        cachedAlbumsTreeData = albums;
+                        if (!append) {
+                            $albumsTree.html('');
+                        }
+                        renderAlbumTreeNodes(albums, $albumsTree, 0);
+
+                        // Auto-select remembered album
+                        if (!append && selectedAlbum.id === undefined && albums.length > 0) {
+                            var flatAlbums = flattenAlbumsTree(albums, 0);
+                            var remembered = preferredAlbumId > 0
+                                ? flatAlbums.find(function(item) { return Number(item.id) === preferredAlbumId; })
+                                : null;
+                            if (remembered) {
+                                // Find the full album data
+                                var findAlbum = function(list, id) {
+                                    for (var i = 0; i < list.length; i++) {
+                                        if (list[i].id === id) return list[i];
+                                        if (list[i].children_recursive) {
+                                            var found = findAlbum(list[i].children_recursive, id);
+                                            if (found) return found;
+                                        }
+                                    }
+                                    return null;
+                                };
+                                setSelectedAlbum(findAlbum(albums, remembered.id) || albums[0]);
+                            } else {
+                                setSelectedAlbum(albums[0]);
+                            }
+                            if (!skipImagesReset) {
+                                resetImages({page: 1, album_id: selectedAlbum.id});
+                            }
+                        }
+
+                        syncAlbumsTreeActive();
+
+                        if (!append && albums.length === 0) {
+                            imagesLoading = false;
+                            syncImagesLoadingState();
+                            syncImagesEmptyState();
+                        }
+
+                        if (options.onComplete) options.onComplete(albums);
+                    })
+                    .catch(function() {
+                        // Fallback: if tree mode fails, load flat list (backward compatible)
+                        loadAlbumsTreeFlat(page, append, options);
+                    });
+            };
+
+            const loadAlbumsTreeFlat = (page = 1, append = false, options = {}) => {
                 const skipImagesReset = Boolean(options.skipImagesReset);
                 axios.get('{{ route('user.albums') }}', {params: {page: page}}).then(response => {
                     if (!response.data.status) return;
@@ -1984,16 +2316,34 @@
                         $title.text('新增相册');
                         $input.attr('placeholder', '请输入相册名称');
                         $submit.text('确认新增');
+                        // Phase 1b: Add parent album selector
+                        var $parentWrap = $('#album-parent-select-wrap');
+                        if ($parentWrap.length === 0) {
+                            $parentWrap = $('<div id="album-parent-select-wrap" style="margin-bottom:8px;"></div>');
+                            $parentWrap.append('<select id="album-parent-select" class="album-search-input" style="width:100%;height:32px;"><option value="">顶级相册（根目录）</option></select>');
+                            $inputWrap.prepend($parentWrap);
+                        }
+                        var $parentSelect = $('#album-parent-select');
+                        $parentSelect.find('option:not(:first)').remove();
+                        var flatList = flattenAlbumsTree(cachedAlbumsTreeData, 0);
+                        flatList.forEach(function(a) {
+                            var indent = '';
+                            for (var d = 0; d < a.depth; d++) indent += '\u00A0\u00A0\u00A0\u00A0';
+                            $parentSelect.append($('<option></option>').val(a.id).text(indent + a.name));
+                        });
+                        $parentWrap.show();
                     } else if (mode === 'rename') {
                         $title.text('重命名相册');
                         $input.attr('placeholder', '请输入相册名称').val(album.name || '');
                         $submit.text('确认重命名');
+                        $('#album-parent-select-wrap').hide();
                     } else if (mode === 'delete') {
                         $title.text('删除相册');
                         $inputWrap.addClass('hidden');
                         $desc.removeClass('hidden').text(`确认删除 ${album.name || '-'}？`);
                         $tip.removeClass('hidden').text('删除后该相册中的图片会被移出。');
                         $submit.removeClass('confirm').addClass('danger').text('确认删除');
+                        $('#album-parent-select-wrap').hide();
                     }
                 } else if (target === 'image') {
                     const item = payload.item || {};
@@ -2308,23 +2658,195 @@
                 $('#permission span').text({public: '公开', private: '私有', all: '全部'}[permission]);
             };
 
+            // Search: inline input
             $('#search').keydown(function (e) {
                 if (e.keyCode === 13) {
+                    e.preventDefault();
                     applySearch($(this).val());
                 }
+            }).on('input', function () {
+                $('#search-clear').css('display', $(this).val() ? 'flex' : 'none');
+            });
+            $('#search-clear').click(function () {
+                $('#search').val('').trigger('input').focus();
+                applySearch('');
             });
 
-            $searchModeToggle.click(function () {
-                imageSearchMode = imageSearchMode === 'ai' ? 'normal' : 'ai';
-                syncSearchModeState();
-                const keyword = $('#search').val();
+            // Search: batch popover
+            $('#search-expand').click(function (e) {
+                e.stopPropagation();
+                const $pop = $('#search-batch-popover');
+                $pop.toggleClass('show');
+                if ($pop.hasClass('show')) {
+                    const current = $.trim($('#search').val());
+                    if (current) {
+                        $('#search-batch-input').val(current);
+                    }
+                    $('#search-batch-input').focus();
+                }
+            });
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#search-batch-popover, #search-expand').length) {
+                    $('#search-batch-popover').removeClass('show');
+                }
+            });
+            $('#search-batch-input').keydown(function (e) {
+                if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    $('#search-batch-submit').click();
+                }
+            });
+            $('#search-batch-submit').click(function () {
+                const raw = $.trim($('#search-batch-input').val());
+                if (!raw) return;
+                const terms = raw.split(/\n/).map(s => s.trim()).filter(Boolean);
+                const keyword = terms.join(',');
+                $('#search').val(keyword);
+                $('#search-batch-popover').removeClass('show');
                 applySearch(keyword);
             });
 
-            $albumsTree.on('click', '>a', function () {
+            // Search mode toggle (in batch popover)
+            $searchModeToggle.click(function () {
+                imageSearchMode = imageSearchMode === 'ai' ? 'normal' : 'ai';
+                syncSearchModeState();
+                const keyword = $.trim($('#search').val());
+                if (keyword) {
+                    applySearch(keyword);
+                }
+            });
+
+            $albumsTree.on('click', '.albums-tree-item', function (e) {
+                if ($(e.target).closest('.albums-tree-toggle').length) return;
                 setSelectedAlbum($(this).data('json'));
                 syncAlbumsTreeActive();
                 resetImages({page: 1, album_id: selectedAlbum.id || null});
+            });
+            // Album tree toggle (expand/collapse children)
+            $albumsTree.on('click', '.albums-tree-toggle', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                var $toggle = $(this);
+                $toggle.toggleClass('is-open');
+                var $children = $toggle.closest('.albums-tree-item').next('.albums-tree-children');
+                $children.toggleClass('is-collapsed');
+            });
+
+
+            // ==================== Album Share Dialog ====================
+            const $shareDialog = $('#album-share-dialog');
+            const $shareAlbumName = $('#share-album-name');
+            const $shareUserSearch = $('#share-user-search');
+            const $shareUserResults = $('#share-user-results');
+            const $shareCurrentList = $('#share-current-list');
+            const $shareNoUsers = $('#share-no-users');
+            let shareAlbumId = null;
+
+            function openShareDialog(album) {
+                shareAlbumId = album.id;
+                $shareAlbumName.text(album.name);
+                $shareUserSearch.val('');
+                $shareUserResults.hide().empty();
+                loadCurrentShares();
+                $shareDialog.show();
+            }
+
+            function loadCurrentShares() {
+                $shareCurrentList.empty();
+                $shareNoUsers.hide();
+                axios.get('/admin/albums/' + shareAlbumId + '/shares')
+                    .then(function(res) {
+                        var shares = res.data.data || [];
+                        if (shares.length === 0) {
+                            $shareNoUsers.show();
+                            return;
+                        }
+                        shares.forEach(function(share) {
+                            var userName = share.user ? (share.user.name || share.user.email) : 'Unknown';
+                            var permLabel = share.permission === 'download' ? '可下载' : '仅查看';
+                            $shareCurrentList.append(
+                                '<div class="share-current-item" data-user-id="' + share.user_id + '">' +
+                                '<i class="fas fa-user" style="color:#94a3b8;font-size:11px;"></i>' +
+                                '<span class="share-current-name">' + escapeHtml(userName) + '</span>' +
+                                '<span class="share-current-perm">' + permLabel + '</span>' +
+                                '<button type="button" class="share-current-remove" title="取消共享"><i class="fas fa-times"></i></button>' +
+                                '</div>'
+                            );
+                        });
+                    })
+                    .catch(function() {
+                        if (typeof toastr !== 'undefined') toastr.error('加载共享信息失败');
+                    });
+            }
+
+            // Close share dialog
+            $('#share-dialog-close').click(function() { $shareDialog.hide(); });
+            $shareDialog.click(function(e) { if (e.target === this) $(this).hide(); });
+
+            // Search users
+            let shareSearchTimer = null;
+            $shareUserSearch.on('input', function() {
+                var keyword = $.trim($(this).val());
+                clearTimeout(shareSearchTimer);
+                if (!keyword) {
+                    $shareUserResults.hide().empty();
+                    return;
+                }
+                shareSearchTimer = setTimeout(function() {
+                    axios.get('/admin/share-users', { params: { keyword: keyword } })
+                        .then(function(res) {
+                            var users = res.data.data || [];
+                            $shareUserResults.empty();
+                            if (users.length === 0) {
+                                $shareUserResults.append('<div class="share-user-option" style="cursor:default;color:#94a3b8;">未找到用户</div>');
+                            } else {
+                                users.forEach(function(u) {
+                                    $shareUserResults.append(
+                                        '<div class="share-user-option" data-user-id="' + u.id + '">' +
+                                        '<i class="fas fa-user" style="color:#94a3b8;font-size:11px;"></i>' +
+                                        '<span>' + escapeHtml(u.name || '') + '</span>' +
+                                        '<span class="user-email">' + escapeHtml(u.email || '') + '</span>' +
+                                        '</div>'
+                                    );
+                                });
+                            }
+                            $shareUserResults.show();
+                        });
+                }, 300);
+            });
+
+            // Click user to share
+            $shareUserResults.on('click', '.share-user-option[data-user-id]', function() {
+                var userId = $(this).data('user-id');
+                if (!userId || !shareAlbumId) return;
+                axios.post('/admin/albums/' + shareAlbumId + '/shares', {
+                    user_id: userId,
+                    permission: 'view'
+                })
+                .then(function(res) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.data.message || '共享成功');
+                    $shareUserSearch.val('');
+                    $shareUserResults.hide().empty();
+                    loadCurrentShares();
+                })
+                .catch(function(err) {
+                    var msg = err.response && err.response.data && err.response.data.message ? err.response.data.message : '共享失败';
+                    if (typeof toastr !== 'undefined') toastr.error(msg);
+                });
+            });
+
+            // Remove share
+            $shareCurrentList.on('click', '.share-current-remove', function() {
+                var userId = $(this).closest('.share-current-item').data('user-id');
+                if (!userId || !shareAlbumId) return;
+                axios.delete('/admin/albums/' + shareAlbumId + '/shares/' + userId)
+                .then(function(res) {
+                    if (typeof toastr !== 'undefined') toastr.success(res.data.message || '已取消共享');
+                    loadCurrentShares();
+                })
+                .catch(function() {
+                    if (typeof toastr !== 'undefined') toastr.error('操作失败');
+                });
             });
 
             $albumsTree.on('click', '.albums-tree-action', function (e) {
@@ -2333,6 +2855,11 @@
                 const $item = $(this).closest(ALBUM_TREE_ITEM);
                 const album = $item.data('json');
                 if (!album || !album.id) return;
+
+                if ($(this).hasClass('share')) {
+                    openShareDialog(album);
+                    return;
+                }
 
                 if ($(this).hasClass('edit')) {
                     openAlbumActionDialog('rename', album);
@@ -2361,7 +2888,10 @@
                         toastr.warning('相册名称不能为空');
                         return;
                     }
-                    request = axios.post('/user/albums', {name: name, intro: ''});
+                    var createData = {name: name, intro: ''};
+                    var parentId = $('#album-parent-select').val();
+                    if (parentId) createData.parent_id = Number(parentId);
+                    request = axios.post('/user/albums', createData);
                 } else if (target === 'album' && mode === 'rename') {
                     if (!album.id) return;
                     if (!name) {
@@ -2451,6 +2981,45 @@
 
             $('#refresh-album-tree').click(() => loadAlbumsTree());
             $('#toggle-album-create').click(() => openAlbumActionDialog('create'));
+
+            // Album tree search
+            $('#toggle-album-search').click(function() {
+                const $bar = $('#album-search-bar');
+                $bar.toggle();
+                if ($bar.is(':visible')) {
+                    $('#album-search-input').val('').focus();
+                }
+            });
+
+            $('#album-search-input').on('input', function() {
+                const keyword = $.trim($(this).val()).toLowerCase();
+                if (!keyword) {
+                    // Show everything, expand all
+                    $('#albums-tree-list .albums-tree-item').show();
+                    $('#albums-tree-list .albums-tree-children').show().removeClass('is-collapsed');
+                    $('#albums-tree-list .albums-tree-toggle').addClass('is-open');
+                    return;
+                }
+                // First hide all items and children containers
+                $('#albums-tree-list .albums-tree-item').hide();
+                $('#albums-tree-list .albums-tree-children').hide();
+                // Find matching items and show them + their parent chain
+                $('#albums-tree-list .albums-tree-item').each(function() {
+                    const name = $(this).find('.albums-tree-name').text().toLowerCase();
+                    if (name.indexOf(keyword) !== -1) {
+                        $(this).show();
+                        // Show all parent containers
+                        $(this).parents('.albums-tree-children').each(function() {
+                            $(this).show().removeClass('is-collapsed');
+                            $(this).prev('.albums-tree-item').show()
+                                .find('.albums-tree-toggle').addClass('is-open');
+                        });
+                        // Also show direct children container if any
+                        $(this).next('.albums-tree-children').show().removeClass('is-collapsed')
+                            .find('.albums-tree-item').show();
+                    }
+                });
+            });
             $('#images-carousel-close').click(() => closeCarousel());
             $('#images-carousel-next').click(() => carouselNext());
             $('#images-carousel-prev').click(() => carouselPrev());
@@ -2606,6 +3175,71 @@
                     $(this).removeClass('is-loading');
                 }
                 $carouselLoading.removeClass('show');
+            });
+            // Zoom controls
+            $('#images-carousel .images-carousel-zoom-controls').on('click', '.zoom-btn', function (e) {
+                e.stopPropagation();
+                const action = $(this).data('zoom');
+                if (action === 'in') {
+                    carouselZoom.scale = Math.min(carouselZoom.scale * 1.3, 5);
+                } else if (action === 'out') {
+                    carouselZoom.scale = Math.max(carouselZoom.scale / 1.3, 0.5);
+                    if (Math.abs(carouselZoom.scale - 1) < 0.05) {
+                        carouselZoom.scale = 1;
+                        carouselZoom.translateX = 0;
+                        carouselZoom.translateY = 0;
+                    }
+                } else if (action === 'original') {
+                    ensureCarouselOriginalImage();
+                    return;
+                } else if (action === 'reset') {
+                    carouselZoom.scale = 1;
+                    carouselZoom.translateX = 0;
+                    carouselZoom.translateY = 0;
+                }
+                applyCarouselZoom();
+            });
+            // Mouse wheel zoom
+            $('#images-carousel .images-carousel-image-frame').on('wheel', function (e) {
+                e.preventDefault();
+                const delta = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
+                carouselZoom.scale = Math.min(Math.max(carouselZoom.scale * delta, 0.5), 5);
+                if (Math.abs(carouselZoom.scale - 1) < 0.05) {
+                    carouselZoom.scale = 1;
+                    carouselZoom.translateX = 0;
+                    carouselZoom.translateY = 0;
+                }
+                applyCarouselZoom();
+            });
+            // Drag to pan when zoomed
+            $('#images-carousel .images-carousel-image-frame').on('pointerdown', function (e) {
+                if (carouselZoom.scale <= 1 || e.button !== 0) return;
+                if ($(e.target).closest('.zoom-btn, .images-carousel-btn').length) return;
+                carouselZoom.dragging = true;
+                carouselZoom.startX = e.clientX - carouselZoom.translateX * carouselZoom.scale;
+                carouselZoom.startY = e.clientY - carouselZoom.translateY * carouselZoom.scale;
+                $(this).addClass('is-dragging');
+                e.preventDefault();
+            });
+            $(document).on('pointermove.carouselZoom', function (e) {
+                if (!carouselZoom.dragging) return;
+                carouselZoom.translateX = (e.clientX - carouselZoom.startX) / carouselZoom.scale;
+                carouselZoom.translateY = (e.clientY - carouselZoom.startY) / carouselZoom.scale;
+                applyCarouselZoom();
+            });
+            $(document).on('pointerup.carouselZoom', function () {
+                if (!carouselZoom.dragging) return;
+                carouselZoom.dragging = false;
+                $('#images-carousel .images-carousel-image-frame').removeClass('is-dragging');
+            });
+            // Double-click to toggle zoom
+            $('#images-carousel .images-carousel-img').on('dblclick', function () {
+                if (carouselZoom.scale > 1) {
+                    resetCarouselZoom();
+                } else {
+                    carouselZoom.scale = 2;
+                    applyCarouselZoom();
+                }
             });
             $carouselCropLayer.on('pointerdown', function (e) {
                 if (!carouselCropState.active || e.button !== 0) return;
@@ -2856,6 +3490,14 @@
 
             $('[data-view]').click(function () {
                 setViewMode($(this).data('view'));
+            });
+            $infiniteScrollToggle.change(function () {
+                infiniteScrollEnabled = this.checked;
+                localStorage.setItem(IMAGES_INFINITE_SCROLL_KEY, infiniteScrollEnabled ? "true" : "false");
+                syncPagination();
+                if (!infiniteScrollEnabled) {
+                    resetImages({page: 1});
+                }
             });
             $pageSize.change(function () {
                 setPageSize($(this).val());
@@ -3132,7 +3774,43 @@
                     }
                     openImageActionDialog('delete', {ids: selected});
                 },
-                batch_delete() {
+                download() {
+                const selected = getOperateTargets();
+                if (!selected.length) {
+                    toastr.warning('请先选择图片');
+                    return;
+                }
+                const items = selected.map(item => $(item).data('json') || {});
+                if (items.length === 1) {
+                    const url = items[0].url || items[0].preview_url || '';
+                    if (url) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = items[0].name || items[0].origin_name || 'image';
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    return;
+                }
+                // Batch: download each sequentially
+                toastr.info(`正在下载 ${items.length} 张图片...`);
+                items.forEach((item, i) => {
+                    setTimeout(() => {
+                        const url = item.url || item.preview_url || '';
+                        if (!url) return;
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = item.name || item.origin_name || ('image_' + i);
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }, i * 300);
+                });
+            },
+            batch_delete() {
                     const selected = getOperateTargets().map(item => $(item).data('id'));
                     if (!selected.length) {
                         toastr.warning('请先选择图片');
@@ -3252,6 +3930,9 @@
                         break;
                     case 'delete': // 删除
                         methods.delete();
+                        break;
+                    case 'download': // 下载
+                        methods.download();
                         break;
                     case 'batch_delete': // 批量删除
                         methods.batch_delete();

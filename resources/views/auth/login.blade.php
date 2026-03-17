@@ -227,9 +227,36 @@
                 padding: 1.5rem;
             }
 
-            .auth-matrix-panel {
+            /* ===== Flip Card Container ===== */
+            .auth-flip-container {
                 width: 100%;
                 max-width: 460px;
+                perspective: 1200px;
+            }
+            .auth-flip-inner {
+                position: relative;
+                width: 100%;
+                transition: transform 0.6s cubic-bezier(.4,.2,.2,1);
+                transform-style: preserve-3d;
+            }
+            .auth-flip-inner.flipped {
+                transform: rotateY(180deg);
+            }
+            .auth-flip-front,
+            .auth-flip-back {
+                width: 100%;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+            }
+            .auth-flip-back {
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform: rotateY(180deg);
+            }
+
+            .auth-matrix-panel {
+                width: 100%;
                 border: 1px solid rgba(148, 163, 184, .24);
                 border-radius: 28px;
                 background: rgba(255, 255, 255, .88);
@@ -278,6 +305,12 @@
                 box-shadow: 0 0 0 3px rgba(14, 165, 233, .16);
             }
 
+            /* Register form accent color override */
+            .auth-flip-back .auth-input:focus {
+                border-color: #f59e0b;
+                box-shadow: 0 0 0 3px rgba(245, 158, 11, .14);
+            }
+
             .auth-inline-row {
                 display: flex;
                 align-items: center;
@@ -308,6 +341,23 @@
             }
 
             .auth-submit:hover { filter: brightness(1.06); }
+
+            /* Register submit button with amber/orange accent */
+            .auth-submit-register {
+                appearance: none;
+                min-height: 46px;
+                width: 100%;
+                border: 0;
+                border-radius: 14px;
+                color: #fff;
+                font-weight: 700;
+                letter-spacing: .02em;
+                cursor: pointer;
+                background: linear-gradient(95deg, #d97706 0%, #b45309 100%);
+                box-shadow: 0 12px 24px rgba(217, 119, 6, .24);
+            }
+
+            .auth-submit-register:hover { filter: brightness(1.04); }
 
             .auth-divider {
                 display: flex;
@@ -364,6 +414,7 @@
             .auth-links a {
                 color: #0f172a;
                 text-decoration: underline;
+                cursor: pointer;
             }
 
             /* ===== Responsive ===== */
@@ -481,75 +532,172 @@
             </div>
         </aside>
 
-        {{-- ===== Right Login Form ===== --}}
+        {{-- ===== Right Panel with Flip Card ===== --}}
         <main class="auth-matrix-main">
-            <section class="auth-matrix-panel">
-                <div class="auth-matrix-panel-head">
-                    <div class="auth-matrix-title">{{ __('Login') }}</div>
-                    <div class="auth-matrix-sub">{{ __('Sign in to manage your images') }}</div>
-                </div>
+            <div class="auth-flip-container">
+                <div class="auth-flip-inner" id="authFlipInner">
 
-                <x-auth-session-status class="mb-4" :status="session('status')" />
-                <x-auth-validation-errors class="mb-4" :errors="$errors" />
+                    {{-- ====== FRONT FACE: Login ====== --}}
+                    <div class="auth-flip-front" id="authFlipFront">
+                        <section class="auth-matrix-panel">
+                            <div class="auth-matrix-panel-head">
+                                <div class="auth-matrix-title">{{ __('Login') }}</div>
+                                <div class="auth-matrix-sub">{{ __('Sign in to manage your images') }}</div>
+                            </div>
 
-                <form method="POST" action="{{ route('login') }}" class="space-y-4">
-                    @csrf
+                            <x-auth-session-status class="mb-4" :status="session('status')" />
+                            <x-auth-validation-errors class="mb-4" :errors="$errors" />
 
-                    <label class="auth-field">
-                        <span class="auth-field-label">{{ __('Email') }}</span>
-                        <input id="email" class="auth-input" type="email" name="email" value="{{ old('email') }}" required autofocus />
-                    </label>
+                            <form method="POST" action="{{ route('login') }}" class="space-y-4">
+                                @csrf
 
-                    <label class="auth-field">
-                        <span class="auth-field-label">{{ __('Password') }}</span>
-                        <input id="password" class="auth-input" type="password" name="password" required autocomplete="current-password" />
-                    </label>
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Email') }}</span>
+                                    <input id="email" class="auth-input" type="email" name="email" value="{{ old('email') }}" required autofocus />
+                                </label>
 
-                    <div class="auth-inline-row">
-                        <label for="remember_me" class="auth-check">
-                            <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <span>{{ __('Remember me') }}</span>
-                        </label>
-                        @if (Route::has('password.request'))
-                            <a class="underline hover:text-slate-900" href="{{ route('password.request') }}">{{ __('Forgot password?') }}</a>
-                        @endif
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Password') }}</span>
+                                    <input id="password" class="auth-input" type="password" name="password" required autocomplete="current-password" />
+                                </label>
+
+                                <div class="auth-inline-row">
+                                    <label for="remember_me" class="auth-check">
+                                        <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                                        <span>{{ __('Remember me') }}</span>
+                                    </label>
+                                    @if (Route::has('password.request'))
+                                        <a class="underline hover:text-slate-900" href="{{ route('password.request') }}">{{ __('Forgot password?') }}</a>
+                                    @endif
+                                </div>
+
+                                <button type="submit" class="auth-submit">{{ __('Sign in') }}</button>
+                            </form>
+
+                            @if(($oauthProviders['google'] ?? false) || ($oauthProviders['github'] ?? false) || true)
+                                <div class="auth-divider">{{ __('or continue with') }}</div>
+
+                                <div class="auth-alt-buttons">
+                                    @if($oauthProviders['google'] ?? false)
+                                        <a href="{{ route('oauth.redirect', ['provider' => 'google']) }}" class="auth-alt-btn">
+                                            <i class="fab fa-google"></i>Google
+                                        </a>
+                                    @endif
+
+                                    @if($oauthProviders['github'] ?? false)
+                                        <a href="{{ route('oauth.redirect', ['provider' => 'github']) }}" class="auth-alt-btn">
+                                            <i class="fab fa-github"></i>GitHub
+                                        </a>
+                                    @endif
+
+                                    <button type="button" class="auth-alt-btn" disabled id="passkey-entry">
+                                        <i class="fas fa-fingerprint"></i><span id="passkey-entry-label">Passkey</span>
+                                    </button>
+                                </div>
+                            @endif
+
+                            <div class="auth-links">
+                                @if(\App\Utils::config(\App\Enums\ConfigKey::IsEnableRegistration))
+                                    {{ __("Don't have an account?") }} <a href="javascript:void(0)" onclick="flipToRegister()">{{ __('Create one') }}</a>
+                                @endif
+                            </div>
+                        </section>
                     </div>
 
-                    <button type="submit" class="auth-submit">{{ __('Sign in') }}</button>
-                </form>
-
-                @if(($oauthProviders['google'] ?? false) || ($oauthProviders['github'] ?? false) || true)
-                    <div class="auth-divider">{{ __('or continue with') }}</div>
-
-                    <div class="auth-alt-buttons">
-                        @if($oauthProviders['google'] ?? false)
-                            <a href="{{ route('oauth.redirect', ['provider' => 'google']) }}" class="auth-alt-btn">
-                                <i class="fab fa-google"></i>Google
-                            </a>
-                        @endif
-
-                        @if($oauthProviders['github'] ?? false)
-                            <a href="{{ route('oauth.redirect', ['provider' => 'github']) }}" class="auth-alt-btn">
-                                <i class="fab fa-github"></i>GitHub
-                            </a>
-                        @endif
-
-                        <button type="button" class="auth-alt-btn" disabled id="passkey-entry">
-                            <i class="fas fa-fingerprint"></i><span id="passkey-entry-label">Passkey</span>
-                        </button>
-                    </div>
-                @endif
-
-                <div class="auth-links">
+                    {{-- ====== BACK FACE: Register ====== --}}
                     @if(\App\Utils::config(\App\Enums\ConfigKey::IsEnableRegistration))
-                        {{ __("Don't have an account?") }} <a href="{{ route('register') }}">{{ __('Create one') }}</a>
+                    <div class="auth-flip-back" id="authFlipBack">
+                        <section class="auth-matrix-panel">
+                            <div class="auth-matrix-panel-head">
+                                <div class="auth-matrix-title" style="color: #92400e;">{{ __('Create Account') }}</div>
+                                <div class="auth-matrix-sub">{{ __('Register a new account to start uploading') }}</div>
+                            </div>
+
+                            <x-auth-validation-errors class="mb-4" :errors="$errors" />
+
+                            <form method="POST" action="{{ route('register') }}" class="space-y-4">
+                                @csrf
+
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Username') }}</span>
+                                    <input class="auth-input" type="text" name="name" value="{{ old('name') }}" required placeholder="{{ __('用户名') }}" />
+                                </label>
+
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Email') }}</span>
+                                    <input class="auth-input" type="email" name="email" value="{{ old('email') }}" required placeholder="{{ __('邮箱地址') }}" />
+                                </label>
+
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Password') }}</span>
+                                    <input class="auth-input" type="password" name="password" required autocomplete="new-password" placeholder="{{ __('登录密码') }}" />
+                                </label>
+
+                                <label class="auth-field">
+                                    <span class="auth-field-label">{{ __('Confirm Password') }}</span>
+                                    <input class="auth-input" type="password" name="password_confirmation" required placeholder="{{ __('确认密码') }}" />
+                                </label>
+
+                                <button type="submit" class="auth-submit-register">{{ __('Create Account') }}</button>
+                            </form>
+
+                            <div class="auth-links">
+                                {{ __('Already have an account?') }} <a href="javascript:void(0)" onclick="flipToLogin()">{{ __('返回登录') }}</a>
+                            </div>
+                        </section>
+                    </div>
                     @endif
+
                 </div>
-            </section>
+            </div>
         </main>
     </div>
 
     @push('scripts')
+        <script>
+            // ===== Flip Card Logic =====
+            (function() {
+                var flipInner = document.getElementById('authFlipInner');
+                var flipFront = document.getElementById('authFlipFront');
+                var flipBack = document.getElementById('authFlipBack');
+                var isFlipped = false;
+
+                function syncHeight() {
+                    if (!flipInner || !flipFront || !flipBack) return;
+                    if (isFlipped) {
+                        flipInner.style.height = flipBack.scrollHeight + 'px';
+                    } else {
+                        flipInner.style.height = flipFront.scrollHeight + 'px';
+                    }
+                }
+
+                window.flipToRegister = function() {
+                    if (!flipInner || !flipBack) return;
+                    isFlipped = true;
+                    flipInner.classList.add('flipped');
+                    syncHeight();
+                };
+
+                window.flipToLogin = function() {
+                    if (!flipInner) return;
+                    isFlipped = false;
+                    flipInner.classList.remove('flipped');
+                    syncHeight();
+                };
+
+                // Set initial height
+                syncHeight();
+
+                // Re-sync on resize
+                window.addEventListener('resize', syncHeight);
+
+                // If there are validation errors and the URL has a register hash, flip to register
+                @if($errors->any() && old('password_confirmation') !== null)
+                    window.flipToRegister();
+                @endif
+            })();
+        </script>
+
         <script>
             (() => {
                 const optionsEndpoint = @json(route('passkeys.login.options'));

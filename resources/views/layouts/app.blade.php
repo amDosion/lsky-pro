@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}">
     <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20220817">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20220817">
+    <link rel="stylesheet" href="{{ asset('css/lsky-ui.css') }}">
 
     <style>
         :root {
@@ -128,11 +129,13 @@
             .lsky-header {
                 left: var(--sidebar-width);
                 width: calc(100% - var(--sidebar-width));
+                transition: left .2s ease, width .2s ease;
             }
 
             .lsky-main {
                 left: var(--sidebar-width);
                 width: calc(100% - var(--sidebar-width));
+                transition: left .2s ease, width .2s ease;
             }
         }
 

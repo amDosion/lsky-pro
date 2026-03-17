@@ -222,12 +222,24 @@ class ImageService
         );
         $pathname = $filename.".{$extension}";
 
-        // FIX-19: 不使用错误抑制，失败时设为 0 而非误导性的 400
+        // FIX-19: getimagesize fallback to Imagick for PSD/RAW/HEIC etc.
         try {
             $imageSize = getimagesize($file->getRealPath());
             [$width, $height] = $imageSize ? [$imageSize[0], $imageSize[1]] : [0, 0];
         } catch (\Throwable $e) {
             [$width, $height] = [0, 0];
+        }
+
+        // Imagick fallback: PSD/RAW/HEIC/AVIF 等格式 getimagesize 可能返回 0
+        if ($isImageFile && ($width === 0 || $height === 0)) {
+            try {
+                $imagick = new \Imagick($file->getRealPath());
+                $width = $imagick->getImageWidth();
+                $height = $imagick->getImageHeight();
+                $imagick->destroy();
+            } catch (\Throwable $e) {
+                // Imagick 也失败则保持 0
+            }
         }
 
         $image->fill([
@@ -395,7 +407,7 @@ class ImageService
         $configs = $strategy->configs;
         return match ($strategy->key) {
             StrategyKey::Local => new LocalFilesystemAdapter(
-                location: $configs->get(LocalOption::Root) ?: config('filesystems.disks.uploads.root')
+                location: config('filesystems.disks.uploads.root')
             ),
             StrategyKey::S3 => new AwsS3V3Adapter(
                 client: new S3Client([
@@ -763,6 +775,7 @@ class ImageService
             '{str-random-10}' => Str::random(10),
             '{filename}' => preg_replace('/[\.\/\\\\]/', '_', Str::replaceLast('.'.$file->getClientOriginalExtension(), '', $file->getClientOriginalName())),
             '{uid}' => Auth::check() ? Auth::id() : 0,
+            '{user_uuid}' => Auth::check() ? (Auth::user()->uuid ?? 'guest') : 'guest',
         ];
         return str_replace(array_keys($array), array_values($array), $pathname);
     }

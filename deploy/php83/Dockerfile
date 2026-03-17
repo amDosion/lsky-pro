@@ -22,6 +22,17 @@ RUN set -eux; \
         libmagickwand-dev \
         libvips-dev \
         libpq-dev \
+        ghostscript \
+        poppler-utils \
+        dcraw \
+        libraw-bin \
+        libimage-exiftool-perl \
+        libheif-examples \
+        fonts-noto-cjk \
+        libreoffice-core \
+        libreoffice-writer \
+        libreoffice-calc \
+        libreoffice-impress \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
@@ -38,6 +49,8 @@ RUN set -eux; \
     && docker-php-ext-install -j"$(nproc)" \
         pgsql \
         pdo_pgsql \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && pecl install imagick \
     && docker-php-ext-enable imagick \
     && php -m | grep -qx 'pdo_pgsql' \
@@ -45,6 +58,7 @@ RUN set -eux; \
     && printf 'ServerName localhost\n' > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
     && a2enmod rewrite headers expires remoteip \
+    && sed -i "s|rights=\"none\" pattern=\"PDF\"|rights=\"read\" pattern=\"PDF\"|" /etc/ImageMagick-6/policy.xml \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer

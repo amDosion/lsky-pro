@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\AiConfigController as ApiAiConfigController;
 use App\Http\Controllers\Api\V1\AiPromptTaskController as ApiAiPromptTaskController;
 use App\Http\Controllers\Api\V1\ImageController as ApiImageController;
 use App\Http\Controllers\Api\V1\IntelligenceController as ApiIntelligenceController;
+use App\Http\Controllers\Api\V1\IntelligenceJobController as ApiIntelligenceJobController;
 use App\Http\Controllers\Api\V1\PerformanceController as ApiPerformanceController;
 use App\Http\Controllers\Api\V1\ProcessingController as ApiProcessingController;
 use App\Http\Controllers\Api\V1\ProcessTemplateController as ApiProcessTemplateController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Api\V1\SpaceController as ApiSpaceController;
 use App\Http\Controllers\Api\V1\WebhookController as ApiWebhookController;
 use App\Http\Controllers\Api\V1\Admin\ReviewController as ApiAdminReviewController;
 use App\Http\Controllers\Common\GalleryController;
+use App\Http\Controllers\Common\DocumentViewerController;
 use App\Http\Controllers\Common\ApiController;
 
 use App\Http\Controllers\Admin\GroupController as AdminGroupController;
@@ -37,6 +39,7 @@ use App\Http\Controllers\Admin\StrategyController as AdminStrategyController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\ImageController as AdminImageController;
+use App\Http\Controllers\Admin\AlbumShareController;
 use App\Services\InstallStateService;
 
 Route::get('/', function (InstallStateService $installState) {
@@ -51,9 +54,16 @@ Route::any('install', [Controller::class, 'install'])->name('install');
 Route::post('upload', [Controller::class, 'upload']);
 Route::group(['middleware' => ['auth']], function () {
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
+    Route::get('admin/console', [UserController::class, 'adminConsole'])->name('admin.console');
     Route::get('advanced', [UserController::class, 'advanced'])->name('advanced');
     Route::get('advanced/{feature}', [UserController::class, 'advancedFeature'])->name('advanced.feature');
     Route::get('gallery', [GalleryController::class, 'index'])->middleware(CheckIsEnableGallery::class)->name('gallery');
+    Route::get('gallery/images', [GalleryController::class, 'images'])->name('gallery.images');
+    Route::get('gallery/albums', [GalleryController::class, 'albums'])->name('gallery.albums');
+    // 文档在线查看
+    Route::get('document-viewer/{id}', [DocumentViewerController::class, 'show'])->name('document.viewer');
+    Route::get('document-content/{id}', [DocumentViewerController::class, 'content'])->name('document.content');
+
 
     Route::prefix('settings')->group(function () {
         Route::get('', [UserController::class, 'settings'])->name('settings');
@@ -87,6 +97,7 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('ai/config/providers/{provider}/models:fetch', [ApiAiConfigController::class, 'models'])
             ->whereIn('provider', ['gpt', 'deepseek', 'qwen', 'gemini'])
             ->name('ai.config.models.fetch');
+        Route::put('ai/config/active', [ApiAiConfigController::class, 'setActive'])->name('ai.config.set-active');
         Route::put('ai/config', [ApiAiConfigController::class, 'update'])->name('ai.config.update');
         Route::get('intelligence/status', [ApiIntelligenceController::class, 'status'])->name('intelligence.status');
         Route::post('intelligence/backfill-preview', [ApiIntelligenceController::class, 'preview'])
@@ -95,6 +106,15 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('intelligence/backfill-dispatch', [ApiIntelligenceController::class, 'dispatchBackfill'])
             ->middleware('throttle:5,1')
             ->name('intelligence.backfill.dispatch');
+        Route::get('intelligence/job-status', [ApiIntelligenceJobController::class, 'status'])->name('intelligence.job.status');
+        Route::post('intelligence/job-start', [ApiIntelligenceJobController::class, 'start'])->name('intelligence.job.start');
+        Route::post('intelligence/job-pause', [ApiIntelligenceJobController::class, 'pause'])->name('intelligence.job.pause');
+        Route::post('intelligence/job-resume', [ApiIntelligenceJobController::class, 'resume'])->name('intelligence.job.resume');
+        Route::post('intelligence/job-stop', [ApiIntelligenceJobController::class, 'stop'])->name('intelligence.job.stop');
+        Route::post('intelligence/job-clear', [ApiIntelligenceJobController::class, 'clear'])->name('intelligence.job.clear');
+        Route::get('intelligence/job-logs', [ApiIntelligenceJobController::class, 'logs'])->name('intelligence.job.logs');
+        Route::get('intelligence/job-schedule', [ApiIntelligenceJobController::class, 'scheduleGet'])->name('intelligence.job.schedule.get');
+        Route::post('intelligence/job-schedule', [ApiIntelligenceJobController::class, 'scheduleSet'])->name('intelligence.job.schedule.set');
         Route::get('system/performance', [ApiPerformanceController::class, 'summary'])->name('system.performance');
         Route::get('processing/drivers/status', [ApiProcessingController::class, 'status'])->name('processing.status');
 
@@ -189,6 +209,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin']], function () 
             ->middleware('throttle:60,1')
             ->name('admin.settings.upgrade.progress');
     });
+
+    Route::get('albums/{id}/shares', [AlbumShareController::class, 'index'])->name('admin.album.shares');
+    Route::post('albums/{id}/shares', [AlbumShareController::class, 'store'])->name('admin.album.shares.store');
+    Route::delete('albums/{id}/shares/{userId}', [AlbumShareController::class, 'destroy'])->name('admin.album.shares.destroy');
+    Route::get('share-users', [AlbumShareController::class, 'users'])->name('admin.share.users');
 });
 
 require __DIR__.'/image.php';

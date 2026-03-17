@@ -117,6 +117,10 @@
 
         .admin-images-v4 .images-stage {
             padding: 10px;
+            position: relative;
+            inset: 0;
+            height: 100%;
+            user-select: none;
         }
 
         .admin-images-v4 .grid-wrap {
@@ -462,154 +466,55 @@
         };
     @endphp
 
-    <div class="admin-page-v2 admin-images-v4" id="admin-images-v4">
-        <aside class="images-aside panel">
-            <div class="images-aside-head">
-                <div class="images-aside-head-main">
-                    <div class="images-aside-title">用户筛选树</div>
-                    <input type="text" id="user-tree-search" class="aside-tree-search" placeholder="筛选用户...">
-                </div>
-            </div>
-            <div class="images-tree-list">
-                <div class="tree-label">上传用户</div>
-                <a class="tree-link {{ $keywords === '' ? 'active' : '' }}" href="{{ route('admin.images') }}"><span class="tree-link-name">全部图片</span></a>
-                <a class="tree-link {{ $activeExact('is:guest') ? 'active' : '' }}" href="{{ route('admin.images', ['keywords' => 'is:guest']) }}"><span class="tree-link-name">游客上传</span></a>
-                @foreach($users as $user)
-                    <a class="tree-link js-user-tree-link {{ $activeUid === $user->id ? 'active' : '' }}" href="{{ route('admin.images', ['keywords' => 'uid:'.$user->id]) }}">
-                        <span class="tree-link-name">{{ $user->name }}</span>
-                        <span class="tree-link-count">{{ $user->images_count }}</span>
-                    </a>
-                @endforeach
-                <div id="user-tree-empty" class="tree-empty-tip">没有匹配的用户</div>
-            </div>
-        </aside>
-
-        <section class="images-main panel">
-            <form class="images-toolbar" action="{{ route('admin.images') }}" method="get" id="admin-images-toolbar">
-                <input type="hidden" id="per-page-input" name="per_page" value="{{ $perPage ?? 50 }}">
-                <div class="toolbar-left">
-                    <div class="hidden lg:block">
-                        <div class="toolbar-action-groups">
-                            <div class="toolbar-action-group">
-                                <button type="submit" class="toolbar-action-btn"><i class="fas fa-search"></i>搜索</button>
-                                <a href="{{ route('admin.images') }}" class="toolbar-action-btn"><i class="fas fa-undo"></i>重置</a>
-                                <button type="button" id="grammar" class="toolbar-action-btn"><i class="fas fa-question-circle"></i>语法</button>
-                            </div>
-                            <div class="toolbar-action-group">
-                                <button type="button" id="select-all" class="toolbar-action-btn"><i class="fas fa-check-square"></i>全选</button>
-                                <button type="button" id="batch-delete" class="toolbar-action-btn" disabled><i class="fas fa-trash"></i>批量删除</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="block lg:hidden">
-                        <x-dropdown direction="right">
-                            <x-slot name="trigger">
-                                <button type="button" class="text-sm py-2 px-3 hover:bg-gray-100 rounded text-gray-800"><i class="fas fa-ellipsis-h text-blue-500"></i></button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link data-admin-action="submit" href="javascript:void(0)" @click="open = false">搜索</x-dropdown-link>
-                                <x-dropdown-link href="{{ route('admin.images') }}" @click="open = false">重置</x-dropdown-link>
-                                <x-dropdown-link data-admin-action="grammar" href="javascript:void(0)" @click="open = false">语法</x-dropdown-link>
-                                <x-dropdown-link data-admin-action="select-all" href="javascript:void(0)" @click="open = false">全选 / 反选</x-dropdown-link>
-                                <x-dropdown-link data-admin-action="batch-delete" href="javascript:void(0)" @click="open = false">批量删除</x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                </div>
-                <div class="toolbar-right">
-                    <input type="text" id="keywords-input" name="keywords" class="h-[30px] px-2.5 py-0 border-0 outline-none rounded bg-gray-100 text-sm transition-all duration-300 hidden md:block md:w-36 md:hover:w-52 md:focus:w-52" placeholder="输入关键字搜索..." value="{{ request('keywords') }}" />
-                    <div class="toolbar-meta-group">
-                        <button type="button" id="view-grid" class="view-switch-btn toolbar-meta-btn active" title="网格"><i class="fas fa-th"></i></button>
-                        <button type="button" id="view-list" class="view-switch-btn toolbar-meta-btn" title="列表"><i class="fas fa-list"></i></button>
-                    </div>
-                    <div class="toolbar-meta-group">
-                        <x-dropdown direction="left">
-                            <x-slot name="trigger">
-                                <button type="button" class="toolbar-meta-btn">
-                                    <span>{{ $orderText }}</span>
-                                    <i class="fas fa-sort-alpha-up text-blue-500"></i>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('')">最新</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('order:earliest')">最早</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('order:utmost')">最大</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('order:least')">最小</x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                        <x-dropdown direction="left">
-                            <x-slot name="trigger">
-                                <button type="button" class="toolbar-meta-btn">
-                                    <span>{{ $statusText }}</span>
-                                    <i class="fas fa-eye text-blue-500"></i>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('')">全部</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('is:public')">公开</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('is:private')">私有</x-dropdown-link>
-                                <x-dropdown-link href="javascript:void(0)" @click="open = false" onclick="setQuickKeyword('is:unhealthy')">违规</x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
-                    </div>
-                </div>
-            </form>
-
-            <div class="images-stage relative inset-0 h-full overflow-y-auto select-none" id="admin-images-stage">
-                <x-images-loading-skeleton id="admin-loading" :show="true" />
-                <div id="grid-view" class="grid-wrap hidden"></div>
-
-                <div id="list-view" class="list-wrap hidden">
-                    <div class="list-head">
-                        <div>缩略图</div>
-                        <div>类型</div>
-                        <div>URL</div>
-                        <div>分辨率</div>
-                        <div>大小</div>
-                        <div>上传时间</div>
-                        <div class="text-right">操作</div>
-                    </div>
-                </div>
-
-                <div id="admin-empty" class="hidden p-4">
-                    <x-no-data message="这里还是空的～" />
-                </div>
-            </div>
-
-            <div class="images-footer">
-                <div class="images-pagination">
-                    <button type="button" id="images-page-prev" class="pager-btn">上一页</button>
-                    <span id="images-page-info" class="pager-info">第 {{ $images->currentPage() }} / {{ $images->lastPage() }} 页，共 {{ $images->total() }} 条</span>
-                    <button type="button" id="images-page-next" class="pager-btn">下一页</button>
-                    <span class="images-footer-label">每页</span>
-                    <select id="images-page-size" class="pager-select">
-                        @foreach([50, 100, 150, 200] as $size)
-                            <option value="{{ $size }}" @selected(($perPage ?? 50) == $size)>{{ $size }}</option>
-                        @endforeach
-                    </select>
-                    <span class="images-footer-label">前往</span>
-                    <input id="images-page-jump" class="pager-jump" type="number" min="1" step="1" placeholder="页码">
-                    <button type="button" id="images-page-go" class="pager-btn">确定</button>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <x-media-carousel
-        id-prefix="admin-carousel"
-        root-class="admin-carousel"
-        host-mode="panel"
-        :show-status="false"
-        :show-caption="false"
+    <x-images-workspace
+        id-prefix="admin"
+        root-class="admin-page-v2 admin-images-v4"
+        sidebar-tag="aside"
+        main-tag="section"
+        stage-id="admin-images-stage"
+        :show-sidebar="true"
+        :show-pagination="true"
     >
-        <x-slot name="actions">
-            <div class="images-carousel-action-group">
-                <button type="button" class="images-carousel-action" id="admin-carousel-rename"><i class="fas fa-pen"></i>重命名</button>
-                <button type="button" class="images-carousel-action is-danger" id="admin-carousel-delete"><i class="fas fa-trash"></i>删除</button>
+        <x-slot:sidebarContent>
+            @include('admin.image.partials.sidebar')
+        </x-slot:sidebarContent>
+
+        <x-slot:toolbar>
+            @include('admin.image.partials.toolbar')
+        </x-slot:toolbar>
+
+        <x-slot:stageContent>
+            <div id="grid-view" class="grid-wrap hidden"></div>
+
+            <div id="list-view" class="list-wrap hidden">
+                <div class="list-head">
+                    <div>缩略图</div>
+                    <div>类型</div>
+                    <div>URL</div>
+                    <div>分辨率</div>
+                    <div>大小</div>
+                    <div>上传时间</div>
+                    <div class="text-right">操作</div>
+                </div>
             </div>
-        </x-slot>
-    </x-media-carousel>
-    <x-modal id="content-modal"><div id="modal-content"></div></x-modal>
+
+            <div id="admin-empty" class="hidden p-4">
+                <x-no-data message="这里还是空的～" />
+            </div>
+        </x-slot:stageContent>
+
+        <x-slot:pagination>
+            @include('admin.image.partials.pagination')
+        </x-slot:pagination>
+
+        <x-slot:carousel>
+            @include('admin.image.partials.carousel')
+        </x-slot:carousel>
+
+        <x-slot:extraContent>
+            <x-modal id="content-modal"><div id="modal-content"></div></x-modal>
+        </x-slot:extraContent>
+    </x-images-workspace>
 
     <script type="text/html" id="search-grammar-tpl">
         <p class="text-gray-600 mb-2"><b>name:张三 email:a@qq.com extension:jpg</b></p>
@@ -652,9 +557,14 @@
             const $pageSize = $('#images-page-size');
             const $pageJump = $('#images-page-jump');
             const $pageGo = $('#images-page-go');
+            const $infiniteScrollToggle = $('#images-infinite-scroll');
+            const INFINITE_SCROLL_KEY = 'lsky.admin.images.infinite.scroll';
+            let infiniteScrollEnabled = localStorage.getItem(INFINITE_SCROLL_KEY) === 'true';
+            $infiniteScrollToggle.prop('checked', infiniteScrollEnabled);
             const VIEW_KEY = 'admin_images_view_mode';
             const $carousel = $('#admin-carousel');
             const $carouselImg = $('#admin-carousel-img');
+            let carouselZoom = {scale: 1, translateX: 0, translateY: 0, dragging: false, startX: 0, startY: 0};
             const $carouselMeta = $('#admin-carousel-detail');
             const $carouselThumbs = $('#admin-carousel-thumbs');
             const $carouselIndex = $('#admin-carousel-index');
@@ -698,13 +608,36 @@
                 return utils.formatSize((Number(sizeKb || 0)) * 1024);
             }
 
+            function applyCarouselZoom() {
+                const img = $carouselImg.get(0);
+                if (!img) return;
+                const {scale, translateX, translateY} = carouselZoom;
+                img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+                img.classList.toggle('is-zoomed', scale > 1);
+            }
+            function resetCarouselZoom() {
+                carouselZoom = {scale: 1, translateX: 0, translateY: 0, dragging: false, startX: 0, startY: 0};
+                applyCarouselZoom();
+            }
             function syncPagination() {
                 const current = Math.max(1, Number(state.currentPage || 1));
                 const last = Math.max(1, Number(state.lastPage || 1));
                 const total = Math.max(0, Number(state.total || 0));
-                $pageInfo.text(`第 ${current} / ${last} 页，共 ${total} 条`);
-                $pagePrev.prop('disabled', current <= 1 || state.loading);
-                $pageNext.prop('disabled', current >= last || state.loading);
+                if (infiniteScrollEnabled) {
+                    $pageInfo.text(`已加载 ${current} / ${last} 页，共 ${total} 条`);
+                    $pagePrev.hide();
+                    $pageNext.hide();
+                    $pageJump.hide();
+                    $("#images-page-jump-label").hide();
+                    $pageGo.hide();
+                } else {
+                    $pageInfo.text(`第 ${current} / ${last} 页，共 ${total} 条`);
+                    $pagePrev.show().prop('disabled', current <= 1 || state.loading);
+                    $pageNext.show().prop('disabled', current >= last || state.loading);
+                    $pageJump.show();
+                    $("#images-page-jump-label").show();
+                    $pageGo.show().prop('disabled', state.loading);
+                }
                 $pageSize.val(String(state.perPage));
                 if (perPageInput) perPageInput.value = String(state.perPage);
             }
@@ -752,6 +685,7 @@
             function syncSelectedUi() {
                 const count = selected.size;
                 $('#batch-delete').prop('disabled', state.loading || count === 0).text(count > 0 ? `批量删除(${count})` : '批量删除');
+                $('#batch-download').prop('disabled', state.loading || count === 0).text(count > 0 ? `下载(${count})` : '下载');
                 const ids = allItemIds();
                 const isAllSelected = ids.length > 0 && ids.every(id => selected.has(id));
                 $('#select-all').text(isAllSelected ? '反选' : '全选').prop('disabled', state.loading || ids.length === 0);
@@ -806,7 +740,7 @@
                             <p class="item-name" title="${name}">${name}</p>
                             <p class="item-sub" title="${date}">${date}</p>
                         </div>
-                        <img src="${thumb}" data-original="${preview}" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}">
+                        <img src="${thumb}" data-original="${preview}" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}" loading="lazy">
                     </a>
                 `;
                 const $el = $(html);
@@ -824,7 +758,7 @@
                 const name = escapeHtml(displayNameOf(image));
                 const html = `
                     <div data-id="${id}" class="list-row item">
-                        <div class="list-col list-thumb-wrap"><img src="${thumb}" class="images-list-thumb" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}"></div>
+                        <div class="list-col list-thumb-wrap"><img src="${thumb}" class="images-list-thumb" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}" loading="lazy"></div>
                         <div class="list-col"><span class="list-type">${type}</span></div>
                         <div class="list-col list-url" title="${url}"><span class="list-url-text">${url}</span></div>
                         <div class="list-col list-resolution">${resolution}</div>
@@ -1005,7 +939,8 @@
                 if (!carouselItems.length) return;
                 carouselIndex = normalizeCarouselIndex(carouselIndex, carouselItems.length);
                 const image = carouselItems[carouselIndex];
-                const displayUrl = image.preview_url || image.url || image.thumb_url || '';
+                const displayUrl = image.url || image.preview_url || image.thumb_url || '';
+                resetCarouselZoom();
                 $carouselImg.attr('src', displayUrl).attr('alt', displayNameOf(image));
                 if (image.thumb_url) {
                     $carouselImg.off('error').on('error', function () {
@@ -1362,7 +1297,18 @@
                 $stage.scrollTop(0);
             });
 
+            $infiniteScrollToggle.change(function () {
+                infiniteScrollEnabled = this.checked;
+                localStorage.setItem(INFINITE_SCROLL_KEY, infiniteScrollEnabled ? 'true' : 'false');
+                syncPagination();
+                if (!infiniteScrollEnabled) {
+                    loadPage(1, false);
+                    $stage.scrollTop(0);
+                }
+            });
+
             $stage.on('scroll', function () {
+                if (!infiniteScrollEnabled) return;
                 if (state.loading || state.currentPage >= state.lastPage) return;
                 const remain = this.scrollHeight - this.scrollTop - this.clientHeight;
                 if (remain <= 60) {
@@ -1370,10 +1316,166 @@
                 }
             });
 
+
+            // Zoom controls
+            $('#admin-carousel .images-carousel-zoom-controls').on('click', '.zoom-btn', function (e) {
+                e.stopPropagation();
+                const action = $(this).data('zoom');
+                if (action === 'in') {
+                    carouselZoom.scale = Math.min(carouselZoom.scale * 1.3, 5);
+                } else if (action === 'out') {
+                    carouselZoom.scale = Math.max(carouselZoom.scale / 1.3, 0.5);
+                    if (Math.abs(carouselZoom.scale - 1) < 0.05) { carouselZoom.scale = 1; carouselZoom.translateX = 0; carouselZoom.translateY = 0; }
+                } else if (action === 'original') {
+                    const image = carouselItems[carouselIndex];
+                    if (image && image.url) {
+                        $carouselImg.addClass('is-loading').attr('src', image.url);
+                    }
+                    return;
+                } else if (action === 'reset') {
+                    carouselZoom.scale = 1; carouselZoom.translateX = 0; carouselZoom.translateY = 0;
+                }
+                applyCarouselZoom();
+            });
+            $('#admin-carousel .images-carousel-image-frame').on('wheel', function (e) {
+                e.preventDefault();
+                const delta = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
+                carouselZoom.scale = Math.min(Math.max(carouselZoom.scale * delta, 0.5), 5);
+                if (Math.abs(carouselZoom.scale - 1) < 0.05) { carouselZoom.scale = 1; carouselZoom.translateX = 0; carouselZoom.translateY = 0; }
+                applyCarouselZoom();
+            });
+            $('#admin-carousel .images-carousel-image-frame').on('pointerdown', function (e) {
+                if (carouselZoom.scale <= 1 || e.button !== 0) return;
+                if ($(e.target).closest('.zoom-btn').length) return;
+                carouselZoom.dragging = true;
+                carouselZoom.startX = e.clientX - carouselZoom.translateX * carouselZoom.scale;
+                carouselZoom.startY = e.clientY - carouselZoom.translateY * carouselZoom.scale;
+                $(this).addClass('is-dragging');
+                e.preventDefault();
+            });
+            $(document).on('pointermove.adminZoom', function (e) {
+                if (!carouselZoom.dragging) return;
+                carouselZoom.translateX = (e.clientX - carouselZoom.startX) / carouselZoom.scale;
+                carouselZoom.translateY = (e.clientY - carouselZoom.startY) / carouselZoom.scale;
+                applyCarouselZoom();
+            });
+            $(document).on('pointerup.adminZoom', function () {
+                if (!carouselZoom.dragging) return;
+                carouselZoom.dragging = false;
+                $('#admin-carousel .images-carousel-image-frame').removeClass('is-dragging');
+            });
+            $('#admin-carousel .images-carousel-img').on('dblclick', function () {
+                if (carouselZoom.scale > 1) { resetCarouselZoom(); } else { carouselZoom.scale = 2; applyCarouselZoom(); }
+            });
             setViewMode(viewMode);
             syncPagination();
             syncSelectedUi();
             loadPage(state.currentPage || 1, false);
-        </script>
+        
+            // Search clear button
+            (function() {
+                const $input = $('#keywords-input');
+                const $clear = $('#admin-search-clear');
+                function toggleClear() { $clear.css('display', $input.val() ? 'flex' : 'none'); }
+                toggleClear();
+                $input.on('input', toggleClear);
+                $clear.click(function() {
+                    $input.val('');
+                    toggleClear();
+                    $input.focus();
+                });
+            })();
+
+            // Batch search popover
+            (function() {
+                const $pop = $('#admin-search-batch-popover');
+                const $textarea = $('#admin-search-batch-input');
+                const $input = $('#keywords-input');
+                const $form = $('#admin-images-toolbar');
+
+                $('#admin-search-expand').click(function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $pop.toggleClass('show');
+                    if ($pop.hasClass('show')) {
+                        const current = $.trim($input.val());
+                        if (current) {
+                            $textarea.val(current.replace(/,/g, '\n'));
+                        }
+                        $textarea.focus();
+                    }
+                });
+
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('#admin-search-batch-popover, #admin-search-expand').length) {
+                        $pop.removeClass('show');
+                    }
+                });
+
+                $textarea.keydown(function(e) {
+                    if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        $('#admin-search-batch-submit').click();
+                    }
+                });
+
+                $('#admin-search-batch-submit').click(function() {
+                    const raw = $.trim($textarea.val());
+                    if (!raw) return;
+                    const terms = raw.split(/\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+                    const keyword = terms.join(',');
+                    $input.val(keyword);
+                    $pop.removeClass('show');
+                    $form.submit();
+                });
+            })();
+
+            // Download selected images
+            $('#batch-download').click(function() {
+                if (selected.size === 0) return;
+                const items = [];
+                $('.item').each(function() {
+                    const id = String($(this).data('id') || '');
+                    if (selected.has(id)) {
+                        const data = $(this).data('json') || {};
+                        items.push(data);
+                    }
+                });
+                if (!items.length) return;
+                if (items.length === 1) {
+                    const url = items[0].url || items[0].preview_url || '';
+                    if (url) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = items[0].origin_name || items[0].name || 'image';
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    return;
+                }
+                toastr.info('正在下载 ' + items.length + ' 张图片...');
+                items.forEach(function(item, i) {
+                    setTimeout(function() {
+                        const url = item.url || item.preview_url || '';
+                        if (!url) return;
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = item.origin_name || item.name || ('image_' + i);
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }, i * 300);
+                });
+            });
+
+            // Mobile action handlers for new buttons
+            $('[data-admin-action="batch-download"]').click(function() {
+                $('#batch-download').click();
+            });
+
+</script>
     @endpush
 </x-app-layout>

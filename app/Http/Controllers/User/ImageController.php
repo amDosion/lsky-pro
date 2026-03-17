@@ -125,7 +125,7 @@ class ImageController extends Controller
         /** @var Image $image */
         if (!$image = $user->images()
             ->with([
-                'strategy:id,name,configs',
+                'strategy:id,key,name,configs',
                 'album:id,user_id,name',
                 'tags:id,name',
                 'intelligenceRecord:image_id,status,source,source_version,ocr_text,caption,summary,prompt_hint,labels,keywords,metadata,analyzed_at,last_error',

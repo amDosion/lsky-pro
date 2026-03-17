@@ -17,11 +17,7 @@ class AiConfigController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->is_adminer) {
-            return $this->fail('仅管理员可查看 AI 配置');
-        }
-
-        return $this->success('success', $service->all());
+        return $this->success('success', $service->allForUser($user));
     }
 
     public function update(Request $request, AiProviderConfigService $service): Response
@@ -29,53 +25,47 @@ class AiConfigController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->is_adminer) {
-            return $this->fail('仅管理员可修改 AI 配置');
-        }
-
         try {
             $validated = $request->validate([
-                'active_provider' => 'required|string|in:gpt,deepseek,qwen,gemini',
-                'providers' => 'required|array',
-                'providers.gpt.api_key' => 'nullable|string|max:500',
-                'providers.gpt.base_url' => 'nullable|string|max:500',
-                'providers.gpt.default_model' => 'nullable|string|max:120',
-                'providers.gpt.models' => 'nullable|array|max:20',
-                'providers.gpt.models.*' => 'nullable|string|max:120',
-                'providers.deepseek.api_key' => 'nullable|string|max:500',
-                'providers.deepseek.base_url' => 'nullable|string|max:500',
-                'providers.deepseek.default_model' => 'nullable|string|max:120',
-                'providers.deepseek.models' => 'nullable|array|max:20',
-                'providers.deepseek.models.*' => 'nullable|string|max:120',
-                'providers.qwen.api_key' => 'nullable|string|max:500',
-                'providers.qwen.base_url' => 'nullable|string|max:500',
-                'providers.qwen.default_model' => 'nullable|string|max:120',
-                'providers.qwen.models' => 'nullable|array|max:20',
-                'providers.qwen.models.*' => 'nullable|string|max:120',
-                'providers.gemini.api_key' => 'nullable|string|max:500',
-                'providers.gemini.base_url' => 'nullable|string|max:500',
-                'providers.gemini.default_model' => 'nullable|string|max:120',
-                'providers.gemini.models' => 'nullable|array|max:20',
-                'providers.gemini.models.*' => 'nullable|string|max:120',
+                'provider' => 'required|string|in:gpt,deepseek,qwen,gemini',
+                'api_key' => 'nullable|string|max:500',
+                'base_url' => 'nullable|string|max:500',
+                'default_model' => 'nullable|string|max:120',
+                'models' => 'nullable|array|max:20',
+                'models.*' => 'nullable|string|max:120',
             ]);
         } catch (ValidationException $e) {
             return $this->fail($e->validator->errors()->first());
         }
 
-        $config = $service->save($validated);
+        $provider = $validated['provider'];
+        unset($validated['provider']);
 
-        return $this->success('AI 配置保存成功', $config);
+        $config = $service->saveProviderForUser($user, $provider, $validated);
+
+        return $this->success('配置已保存', $config);
     }
 
-    public function models(Request $request, string $provider, AiProviderConfigService $service): Response
+    public function setActive(Request $request, AiProviderConfigService $service): Response
     {
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->is_adminer) {
-            return $this->fail('仅管理员可获取模型列表');
+        try {
+            $validated = $request->validate([
+                'active_provider' => 'required|string|in:gpt,deepseek,qwen,gemini',
+            ]);
+        } catch (ValidationException $e) {
+            return $this->fail($e->validator->errors()->first());
         }
 
+        $config = $service->setActiveProviderForUser($user, $validated['active_provider']);
+
+        return $this->success('已切换启用提供商', $config);
+    }
+
+    public function models(Request $request, string $provider, AiProviderConfigService $service): Response
+    {
         try {
             $validated = $request->validate([
                 'api_key' => 'nullable|string|max:500',

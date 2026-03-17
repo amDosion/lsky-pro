@@ -2,12 +2,12 @@
 
 @php
     $sections = [
-        ['id' => 'general', 'eyebrow' => '基础', 'title' => '通用信息', 'description' => '维护站点名称、SEO 元信息和首页公告。', 'status' => '核心配置'],
-        ['id' => 'control', 'eyebrow' => '访问', 'title' => '系统开关', 'description' => '控制注册、画廊、接口和游客上传等入口。', 'status' => '即时生效'],
-        ['id' => 'user', 'eyebrow' => '容量', 'title' => '用户默认配额', 'description' => '设置新用户的初始可用容量。', 'status' => '运营规则'],
-        ['id' => 'cost', 'eyebrow' => '成本', 'title' => '成本估算', 'description' => '维护存储单价和币种，用于统计页估算。', 'status' => '分析使用'],
-        ['id' => 'mail', 'eyebrow' => '通知', 'title' => '邮件配置', 'description' => '校准 SMTP 参数并执行在线测试。', 'status' => '需要验证'],
-        ['id' => 'upgrade', 'eyebrow' => '运维', 'title' => '系统升级', 'description' => '检查版本、查看更新说明并执行升级。', 'status' => '管理员专属'],
+        ['id' => 'general', 'eyebrow' => '基础', 'title' => '通用信息', 'description' => '维护站点名称、SEO 元信息和首页公告。', 'status' => '核心配置', 'icon' => 'fa-globe'],
+        ['id' => 'control', 'eyebrow' => '访问', 'title' => '系统开关', 'description' => '控制注册、画廊、接口和游客上传等入口。', 'status' => '即时生效', 'icon' => 'fa-sliders-h'],
+        ['id' => 'user', 'eyebrow' => '容量', 'title' => '用户默认配额', 'description' => '设置新用户的初始可用容量。', 'status' => '运营规则', 'icon' => 'fa-user-cog'],
+        ['id' => 'cost', 'eyebrow' => '成本', 'title' => '成本估算', 'description' => '维护存储单价和币种，用于统计页估算。', 'status' => '分析使用', 'icon' => 'fa-coins'],
+        ['id' => 'mail', 'eyebrow' => '通知', 'title' => '邮件配置', 'description' => '校准 SMTP 参数并执行在线测试。', 'status' => '需要验证', 'icon' => 'fa-envelope'],
+        ['id' => 'upgrade', 'eyebrow' => '运维', 'title' => '系统升级', 'description' => '检查版本、查看更新说明并执行升级。', 'status' => '管理员专属', 'icon' => 'fa-arrow-up'],
     ];
 
     $controlFlags = [
@@ -26,207 +26,242 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/markdown-css/github-markdown-light.css') }}">
     <style>
+        /* ===== Root Shell ===== */
         .settings-shell {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 0;
             color: #0f172a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        .settings-hero {
-            position: relative;
-            overflow: hidden;
-            border: 1px solid #dbe2ea;
-            border-radius: 22px;
-            padding: 22px;
-            background:
-                radial-gradient(circle at top right, rgba(251, 191, 36, .26), transparent 28%),
-                linear-gradient(135deg, #0f172a 0%, #1d4ed8 58%, #38bdf8 100%);
-            color: #fff;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, .14);
-        }
-
-        .settings-hero::after {
-            content: '';
-            position: absolute;
-            width: 260px;
-            height: 260px;
-            right: -60px;
-            bottom: -120px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .08);
-            filter: blur(6px);
-        }
-
-        .settings-hero-copy {
-            position: relative;
-            z-index: 1;
-            max-width: 760px;
-        }
-
-        .settings-hero-eyebrow {
-            font-size: 11px;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, .72);
-        }
-
-        .settings-hero-title {
-            margin-top: 10px;
-            font-size: 30px;
-            line-height: 1.1;
-            font-weight: 800;
-        }
-
-        .settings-hero-text {
-            margin-top: 10px;
-            max-width: 680px;
-            font-size: 14px;
-            line-height: 1.7;
-            color: rgba(255, 255, 255, .86);
-        }
-
-        .settings-stat-grid {
-            position: relative;
-            z-index: 1;
-            margin-top: 18px;
-            display: grid;
-            gap: 10px;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-        }
-
-        .settings-stat-card {
-            border: 1px solid rgba(255, 255, 255, .14);
+        /* ===== Compact Header Bar ===== */
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
             border-radius: 16px;
-            padding: 12px 14px;
-            background: rgba(255, 255, 255, .10);
-            backdrop-filter: blur(8px);
+            margin-bottom: 16px;
         }
 
-        .settings-stat-k {
-            font-size: 11px;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, .68);
+        .settings-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
-        .settings-stat-v {
-            margin-top: 6px;
-            font-size: 22px;
-            line-height: 1;
-            font-weight: 800;
+        .settings-header-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #fff;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .settings-stat-sub {
-            margin-top: 6px;
+        .settings-header-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .settings-header-sub {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .settings-header-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .settings-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 12px;
-            color: rgba(255, 255, 255, .74);
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
         }
 
+        .settings-badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .settings-badge-dot.green { background: #22c55e; }
+        .settings-badge-dot.amber { background: #f59e0b; }
+        .settings-badge-dot.red { background: #ef4444; }
+        .settings-badge-dot.blue { background: #3b82f6; }
+
+        /* ===== Two-Column Layout ===== */
         .settings-layout {
             display: grid;
-            gap: 14px;
-            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 16px;
+            grid-template-columns: 260px minmax(0, 1fr);
             align-items: start;
         }
 
+        /* ===== Sidebar ===== */
         .settings-aside {
             position: sticky;
-            top: 14px;
+            top: 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        .settings-card,
-        .settings-panel {
+        .settings-nav-card {
             border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            background: #fff;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
-        }
-
-        .settings-card-body {
-            padding: 16px;
-        }
-
-        .settings-card-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .settings-card-sub {
-            margin-top: 4px;
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.6;
-        }
-
-        .settings-nav {
-            margin-top: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .settings-nav-link {
-            border: 1px solid transparent;
             border-radius: 14px;
-            padding: 12px;
-            display: block;
-            transition: .2s ease;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+            overflow: hidden;
         }
 
-        .settings-nav-link:hover {
-            border-color: #dbe2ea;
-            background: #f8fafc;
+        .settings-nav-header {
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
-        .settings-nav-link.active {
-            border-color: #bfdbfe;
-            background: #eff6ff;
-            box-shadow: inset 0 0 0 1px rgba(29, 78, 216, .08);
-        }
-
-        .settings-nav-link.active .settings-nav-label,
-        .settings-nav-link.active .settings-nav-desc {
-            color: #1d4ed8;
-        }
-
-        .settings-nav-label {
+        .settings-nav-header-title {
             font-size: 11px;
-            letter-spacing: .08em;
+            font-weight: 700;
+            letter-spacing: .1em;
             text-transform: uppercase;
             color: #94a3b8;
         }
 
+        .settings-nav {
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .settings-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .18s ease;
+            text-decoration: none;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .settings-nav-link:hover {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .settings-nav-link.active {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .settings-nav-link.active .settings-nav-icon {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+        .settings-nav-link.active .settings-nav-title {
+            color: #1d4ed8;
+        }
+
+        .settings-nav-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #64748b;
+            flex-shrink: 0;
+            transition: all .18s ease;
+        }
+
+        .settings-nav-text {
+            flex: 1;
+            min-width: 0;
+        }
+
         .settings-nav-title {
-            margin-top: 6px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #0f172a;
+            transition: color .18s ease;
         }
 
         .settings-nav-desc {
-            margin-top: 4px;
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.5;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .settings-nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .settings-nav-dot.green { background: #22c55e; }
+        .settings-nav-dot.amber { background: #f59e0b; }
+        .settings-nav-dot.red { background: #ef4444; }
+        .settings-nav-dot.blue { background: #3b82f6; }
+
+        /* ===== Sidebar Summary Card ===== */
+        .settings-summary-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+            padding: 14px;
+        }
+
+        .settings-summary-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 10px;
         }
 
         .settings-kv {
-            margin-top: 14px;
             display: grid;
-            gap: 10px;
+            gap: 8px;
         }
 
         .settings-kv-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
+            padding: 10px 12px;
+            border: 1px solid #f1f5f9;
+            border-radius: 10px;
             background: #f8fafc;
-            padding: 12px;
         }
 
         .settings-kv-key {
@@ -237,31 +272,52 @@
         }
 
         .settings-kv-value {
-            margin-top: 6px;
+            margin-top: 4px;
             font-size: 14px;
             font-weight: 700;
             color: #0f172a;
             word-break: break-word;
         }
 
+        /* ===== Main Content Area ===== */
         .settings-main {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 0;
         }
 
+        /* ===== Panel (each tab content) ===== */
         .settings-panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, .04);
             overflow: hidden;
-            scroll-margin-top: 14px;
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+            animation: settingsFadeIn .25s ease;
+        }
+
+        @keyframes settingsFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .settings-panel-head {
-            padding: 18px 18px 16px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 22px 18px;
+            border-bottom: 1px solid #f1f5f9;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             gap: 14px;
+        }
+
+        .settings-panel-head-left {
+            flex: 1;
+            min-width: 0;
         }
 
         .settings-panel-label {
@@ -269,10 +325,11 @@
             letter-spacing: .12em;
             text-transform: uppercase;
             color: #94a3b8;
+            font-weight: 600;
         }
 
         .settings-panel-title {
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 20px;
             line-height: 1.2;
             font-weight: 800;
@@ -290,15 +347,17 @@
         .settings-chip {
             display: inline-flex;
             align-items: center;
+            gap: 6px;
             min-height: 28px;
             border-radius: 999px;
-            border: 1px solid #dbe2ea;
+            border: 1px solid #e2e8f0;
             background: #f8fafc;
-            padding: 0 10px;
+            padding: 0 12px;
             font-size: 12px;
             font-weight: 600;
             color: #475569;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .settings-chip.success {
@@ -313,10 +372,27 @@
             color: #a16207;
         }
 
-        .settings-panel-body {
-            padding: 18px;
+        .settings-chip.info {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
         }
 
+        .settings-chip-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .settings-chip.success .settings-chip-dot { background: #22c55e; }
+        .settings-chip.warn .settings-chip-dot { background: #f59e0b; }
+        .settings-chip.info .settings-chip-dot { background: #3b82f6; }
+
+        .settings-panel-body {
+            padding: 22px;
+        }
+
+        /* ===== Form Grids ===== */
         .settings-form-grid {
             display: grid;
             gap: 14px;
@@ -347,8 +423,8 @@
 
         .settings-note {
             margin-top: 14px;
-            border-radius: 14px;
-            border: 1px solid #dbe2ea;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
             background: #f8fafc;
             padding: 12px 14px;
             font-size: 12px;
@@ -364,36 +440,67 @@
             flex-wrap: wrap;
         }
 
-        .settings-toggle-grid,
-        .settings-inline-grid {
+        /* ===== Toggle Grid (Control Board) ===== */
+        .settings-toggle-grid {
             display: grid;
-            gap: 12px;
+            gap: 10px;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
-        .settings-toggle-card,
+        .settings-toggle-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #f8fafc;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .settings-toggle-card .switch {
+            flex-shrink: 0;
+        }
+
+        .settings-toggle-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+        }
+
+        .settings-toggle-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .settings-toggle-copy {
+            margin-top: 4px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #64748b;
+        }
+
+        /* ===== Inline Grid (mini stat cards) ===== */
+        .settings-inline-grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
         .settings-mini-card {
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
+            border-radius: 14px;
             background: #f8fafc;
             padding: 14px;
         }
 
-        .settings-toggle-card {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            align-items: flex-start;
-        }
-
-        .settings-toggle-title,
         .settings-mini-title {
             font-size: 14px;
             font-weight: 700;
             color: #0f172a;
         }
 
-        .settings-toggle-copy,
         .settings-mini-sub {
             margin-top: 4px;
             font-size: 12px;
@@ -408,22 +515,24 @@
             color: #0f172a;
         }
 
+        /* ===== Stack ===== */
         .settings-stack {
             display: grid;
             gap: 14px;
         }
 
+        /* ===== Upgrade Board ===== */
         .settings-upgrade-board {
             border: 1px dashed #bfdbfe;
-            border-radius: 18px;
+            border-radius: 16px;
             background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
             padding: 14px;
         }
 
         .settings-upgrade-state {
-            min-height: 132px;
-            border-radius: 14px;
-            border: 1px solid #dbe2ea;
+            min-height: 120px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
             background: rgba(255, 255, 255, .92);
             display: flex;
             align-items: center;
@@ -439,8 +548,8 @@
         }
 
         .settings-upgrade-card {
-            border: 1px solid #dbe2ea;
-            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
             background: rgba(255, 255, 255, .92);
             padding: 16px;
         }
@@ -452,11 +561,11 @@
         }
 
         .settings-upgrade-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
             object-fit: cover;
-            box-shadow: 0 10px 20px rgba(15, 23, 42, .12);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, .10);
         }
 
         .settings-upgrade-title {
@@ -485,6 +594,7 @@
             pointer-events: none;
         }
 
+        /* ===== Responsive ===== */
         @media (max-width: 1024px) {
             .settings-layout {
                 grid-template-columns: 1fr;
@@ -493,20 +603,47 @@
             .settings-aside {
                 position: static;
             }
+
+            .settings-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 4px;
+                padding: 8px;
+            }
+
+            .settings-nav-link {
+                flex: 0 0 auto;
+                padding: 8px 12px;
+            }
+
+            .settings-nav-desc {
+                display: none;
+            }
+
+            .settings-summary-card {
+                display: none;
+            }
         }
 
         @media (max-width: 768px) {
-            .settings-hero {
-                padding: 18px;
-                border-radius: 18px;
+            .settings-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+                padding: 16px;
             }
 
-            .settings-hero-title {
-                font-size: 24px;
+            .settings-header-badges {
+                width: 100%;
             }
 
             .settings-panel-head {
                 flex-direction: column;
+                padding: 16px 18px 14px;
+            }
+
+            .settings-panel-body {
+                padding: 18px;
             }
 
             .settings-form-grid {
@@ -520,96 +657,126 @@
             .settings-toggle-card {
                 flex-direction: column;
             }
+
+            .settings-nav-link {
+                padding: 6px 10px;
+            }
+
+            .settings-nav-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+
+            .settings-nav-text {
+                display: none;
+            }
+
+            .settings-nav-dot {
+                width: 6px;
+                height: 6px;
+            }
         }
     </style>
 @endpush
 
 <x-app-layout>
     <div class="settings-shell">
-        <section class="settings-hero">
-            <div class="settings-hero-copy">
-                <div class="settings-hero-eyebrow">Admin Control Center</div>
-                <h1 class="settings-hero-title">系统设置工作台</h1>
-                <p class="settings-hero-text">
-                    把站点配置、访问开关、通知链路和升级入口集中到一个可导航的页面里。
-                    本次重构只调整信息架构和界面壳层，保存接口、字段名和运维动作保持不变。
-                </p>
-            </div>
-
-            <div class="settings-stat-grid">
-                <div class="settings-stat-card">
-                    <div class="settings-stat-k">配置分区</div>
-                    <div class="settings-stat-v">{{ count($sections) }}</div>
-                    <div class="settings-stat-sub">覆盖站点、通知、升级与成本配置</div>
+        {{-- ===== Compact Header Bar ===== --}}
+        <header class="settings-header">
+            <div class="settings-header-left">
+                <div class="settings-header-icon">
+                    <i class="fas fa-cogs"></i>
                 </div>
-                <div class="settings-stat-card">
-                    <div class="settings-stat-k">已启用开关</div>
-                    <div class="settings-stat-v">{{ $enabledControlCount }}</div>
-                    <div class="settings-stat-sub">共 5 项核心访问控制</div>
-                </div>
-                <div class="settings-stat-card">
-                    <div class="settings-stat-k">SMTP 状态</div>
-                    <div class="settings-stat-v">{{ $mailConfigured ? '已接入' : '待配置' }}</div>
-                    <div class="settings-stat-sub">{{ $mailConfigured ? $mailHost : '建议先完成邮件测试后再启用账号验证' }}</div>
-                </div>
-                <div class="settings-stat-card">
-                    <div class="settings-stat-k">当前版本</div>
-                    <div class="settings-stat-v">{{ \App\Utils::config(\App\Enums\ConfigKey::AppVersion) }}</div>
-                    <div class="settings-stat-sub">升级检查与安装操作仍由现有服务执行</div>
+                <div>
+                    <h1 class="settings-header-title">系统设置</h1>
+                    <p class="settings-header-sub">站点配置、访问控制、通知和升级管理</p>
                 </div>
             </div>
-        </section>
+            <div class="settings-header-badges">
+                <span class="settings-badge">
+                    <span class="settings-badge-dot {{ $enabledControlCount > 0 ? 'green' : 'amber' }}"></span>
+                    {{ $enabledControlCount }}/5 开关已启用
+                </span>
+                <span class="settings-badge">
+                    <span class="settings-badge-dot {{ $mailConfigured ? 'green' : 'red' }}"></span>
+                    SMTP {{ $mailConfigured ? '已接入' : '待配置' }}
+                </span>
+                <span class="settings-badge">
+                    <span class="settings-badge-dot blue"></span>
+                    {{ \App\Utils::config(\App\Enums\ConfigKey::AppVersion) }}
+                </span>
+            </div>
+        </header>
 
+        {{-- ===== Two-Column Layout ===== --}}
         <div class="settings-layout">
+            {{-- ===== Sidebar Navigation ===== --}}
             <aside class="settings-aside">
-                <div class="settings-card">
-                    <div class="settings-card-body">
-                        <div class="settings-card-title">快速导航</div>
-                        <div class="settings-card-sub">按主题切换到对应配置区，避免在单页里来回滚动查找。</div>
-
-                        <nav class="settings-nav">
-                            @foreach($sections as $section)
-                                <a class="settings-nav-link" href="#{{ $section['id'] }}">
-                                    <div class="settings-nav-label">{{ $section['eyebrow'] }}</div>
-                                    <div class="settings-nav-title">{{ $section['title'] }}</div>
-                                    <div class="settings-nav-desc">{{ $section['description'] }}</div>
-                                </a>
-                            @endforeach
-                        </nav>
+                <div class="settings-nav-card">
+                    <div class="settings-nav-header">
+                        <div class="settings-nav-header-title">配置导航</div>
                     </div>
+                    <nav class="settings-nav">
+                        @foreach($sections as $idx => $section)
+                            <a class="settings-nav-link {{ $idx === 0 ? 'active' : '' }}"
+                               href="javascript:void(0)"
+                               data-tab="{{ $section['id'] }}">
+                                <div class="settings-nav-icon">
+                                    <i class="fas {{ $section['icon'] }}"></i>
+                                </div>
+                                <div class="settings-nav-text">
+                                    <div class="settings-nav-title">{{ $section['title'] }}</div>
+                                    <div class="settings-nav-desc">{{ $section['eyebrow'] }}</div>
+                                </div>
+                                @if($section['id'] === 'mail' && ! $mailConfigured)
+                                    <span class="settings-nav-dot red" title="邮件未配置"></span>
+                                @elseif($section['id'] === 'control')
+                                    <span class="settings-nav-dot green" title="{{ $enabledControlCount }}/5 已启用"></span>
+                                @elseif($section['id'] === 'upgrade')
+                                    <span class="settings-nav-dot blue" title="检查更新"></span>
+                                @endif
+                            </a>
+                        @endforeach
+                    </nav>
                 </div>
 
-                <div class="settings-card">
-                    <div class="settings-card-body">
-                        <div class="settings-card-title">当前摘要</div>
-                        <div class="settings-kv">
-                            <div class="settings-kv-item">
-                                <div class="settings-kv-key">应用名称</div>
-                                <div class="settings-kv-value">{{ $configs->get('app_name') ?: '未设置' }}</div>
-                            </div>
-                            <div class="settings-kv-item">
-                                <div class="settings-kv-key">默认用户容量</div>
-                                <div class="settings-kv-value">{{ $configs->get('user_initial_capacity') ?: '0' }} KB</div>
-                            </div>
-                            <div class="settings-kv-item">
-                                <div class="settings-kv-key">存储估算币种</div>
-                                <div class="settings-kv-value">{{ $configs->get('storage_cost_currency', 'CNY') }}</div>
-                            </div>
+                {{-- ===== Summary Card ===== --}}
+                <div class="settings-summary-card">
+                    <div class="settings-summary-title">当前摘要</div>
+                    <div class="settings-kv">
+                        <div class="settings-kv-item">
+                            <div class="settings-kv-key">应用名称</div>
+                            <div class="settings-kv-value">{{ $configs->get('app_name') ?: '未设置' }}</div>
+                        </div>
+                        <div class="settings-kv-item">
+                            <div class="settings-kv-key">默认用户容量</div>
+                            <div class="settings-kv-value">{{ $configs->get('user_initial_capacity') ?: '0' }} KB</div>
+                        </div>
+                        <div class="settings-kv-item">
+                            <div class="settings-kv-key">存储估算币种</div>
+                            <div class="settings-kv-value">{{ $configs->get('storage_cost_currency', 'CNY') }}</div>
                         </div>
                     </div>
                 </div>
             </aside>
 
+            {{-- ===== Main Content: Dynamic Panels ===== --}}
             <main class="settings-main">
-                @foreach($sections as $section)
-                    <section id="{{ $section['id'] }}" class="settings-panel">
+                @foreach($sections as $idx => $section)
+                    <section id="{{ $section['id'] }}" class="settings-panel {{ $idx === 0 ? 'active' : '' }}">
                         <div class="settings-panel-head">
-                            <div>
+                            <div class="settings-panel-head-left">
                                 <div class="settings-panel-label">{{ $section['eyebrow'] }}</div>
                                 <h2 class="settings-panel-title">{{ $section['title'] }}</h2>
                                 <p class="settings-panel-desc">{{ $section['description'] }}</p>
                             </div>
-                            <span class="settings-chip {{ $section['id'] === 'mail' && ! $mailConfigured ? 'warn' : ($section['id'] === 'control' ? 'success' : '') }}">
+                            <span class="settings-chip {{ $section['id'] === 'mail' && ! $mailConfigured ? 'warn' : ($section['id'] === 'control' ? 'success' : ($section['id'] === 'upgrade' ? 'info' : '')) }}">
+                                @if($section['id'] === 'mail' && ! $mailConfigured)
+                                    <span class="settings-chip-dot"></span>
+                                @elseif($section['id'] === 'control')
+                                    <span class="settings-chip-dot"></span>
+                                @endif
                                 {{ $section['status'] }}
                             </span>
                         </div>
@@ -644,6 +811,7 @@
 
     @push('scripts')
         <script>
+            // ===== Data-select driver toggling (for mail driver) =====
             let setSelected = function () {
                 $('[data-select]').each(function () {
                     $(`[data-${$(this).data('select')}-driver=${$(this).val()}]`)[this.checked ? 'show' : 'hide']();
@@ -656,47 +824,37 @@
                 setSelected();
             });
 
-            let setActiveNav = function (id) {
-                $('.settings-nav-link').each(function () {
-                    $(this).toggleClass('active', $(this).attr('href') === `#${id}`);
-                });
+            // ===== Tab Switching (dynamic panels) =====
+            let switchTab = function (tabId) {
+                // Hide all panels
+                $('.settings-panel').removeClass('active');
+                // Show target
+                $('#' + tabId).addClass('active');
+                // Update nav
+                $('.settings-nav-link').removeClass('active');
+                $(`.settings-nav-link[data-tab="${tabId}"]`).addClass('active');
+
+                // Re-init driver visibility for newly shown panel
+                setSelected();
             };
 
-            let observeSections = function () {
-                let sections = Array.from(document.querySelectorAll('.settings-panel[id]'));
-                if (! sections.length) {
-                    return;
-                }
-
-                setActiveNav(sections[0].id);
-
-                if (! ('IntersectionObserver' in window)) {
-                    return;
-                }
-
-                let observer = new IntersectionObserver((entries) => {
-                    let current = entries
-                        .filter(entry => entry.isIntersecting)
-                        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-                    if (current) {
-                        setActiveNav(current.target.id);
-                    }
-                }, {
-                    rootMargin: '-18% 0px -56% 0px',
-                    threshold: [0.2, 0.45, 0.7]
-                });
-
-                sections.forEach(section => observer.observe(section));
-            };
-
-            $('.settings-nav-link').on('click', function () {
-                let target = $(this).attr('href').replace('#', '');
-                setActiveNav(target);
+            // Nav click handler
+            $('.settings-nav-link[data-tab]').on('click', function (e) {
+                e.preventDefault();
+                let tabId = $(this).data('tab');
+                switchTab(tabId);
             });
 
-            observeSections();
+            // Support URL hash navigation
+            if (window.location.hash) {
+                let hashId = window.location.hash.replace('#', '');
+                let target = $(`.settings-nav-link[data-tab="${hashId}"]`);
+                if (target.length) {
+                    switchTab(hashId);
+                }
+            }
 
+            // ===== Form Submission =====
             $('form[data-settings-form="save"]').submit(function (e) {
                 e.preventDefault();
                 axios.put(this.action, $(this).serialize()).then(function (response) {
@@ -704,6 +862,7 @@
                 });
             });
 
+            // ===== Mail Test =====
             $('#mail-test').click(function () {
                 Swal.fire({
                     title: '请输入接收测试邮件的邮箱',
@@ -734,6 +893,7 @@
                 })
             });
 
+            // ===== Upgrade Logic =====
             let timer;
             let upgrade = function () {
                 return {

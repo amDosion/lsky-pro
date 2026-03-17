@@ -53,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array<int, string>
      */
     protected $fillable = [
+        'uuid',
         'name',
         'email',
         'password',
@@ -104,6 +105,10 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function booted()
     {
         static::creating(function (self $user) {
+            // 自动生成 UUID
+            if (empty($user->uuid)) {
+                $user->uuid = (string) \Illuminate\Support\Str::uuid();
+            }
             // 默认组
             $user->group_id = Group::query()->where('is_default', true)->value('id');
             // 初始容量
@@ -195,4 +200,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return (bool) $this->configs->get(self::CONFIG_PASSWORD_LOGIN_READY, false);
     }
+
+    public function sharedAlbums(): BelongsToMany
+    {
+        return $this->belongsToMany(Album::class, 'album_shares')
+            ->withPivot('permission', 'shared_by')
+            ->withTimestamps();
+    }
+
 }

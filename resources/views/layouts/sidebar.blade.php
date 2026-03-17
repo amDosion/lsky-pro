@@ -269,26 +269,75 @@
         background: transparent;
     }
 
-    #app-sidebar.is-collapsed .menu-title,
-    #app-sidebar.is-collapsed .menu-name {
+    /* ── Collapsed: hide group titles ── */
+    #app-sidebar.is-collapsed .menu-title {
         display: none;
     }
 
     #app-sidebar.is-collapsed .lsky-sidebar-inner {
         padding-left: 7px;
         padding-right: 7px;
+        overflow: visible;
     }
 
-    #app-sidebar.is-collapsed .menu-entry {
+    #app-sidebar.is-collapsed .menu-entry,
+    #app-sidebar.is-collapsed .menu-parent {
         width: 44px;
         min-height: 44px;
         padding: 0;
         gap: 0;
         border-radius: 10px;
+        position: relative;
+    }
+
+    #app-sidebar.is-collapsed .submenu-wrap {
+        width: 44px;
     }
 
     #app-sidebar.is-collapsed .menu-icon {
         font-size: 16px;
+    }
+
+    #app-sidebar.is-collapsed .sidebar-menu {
+        overflow: visible;
+    }
+
+    /* ── Collapsed: tooltip on hover ── */
+    #app-sidebar.is-collapsed .menu-name {
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1e293b;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        word-break: normal;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .15s ease;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,.18);
+        letter-spacing: .01em;
+    }
+
+    #app-sidebar.is-collapsed .menu-name::before {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 4px solid transparent;
+        border-right-color: #1e293b;
+        border-left: 0;
+    }
+
+    #app-sidebar.is-collapsed .menu-entry:hover .menu-name,
+    #app-sidebar.is-collapsed .menu-parent:hover .menu-name {
+        opacity: 1;
     }
 
     #app-sidebar .mobile-only {
@@ -340,7 +389,6 @@
             window.addEventListener('scroll', () => this.syncAdvancedPopover(), true);
         },
         openAdvancedMenu(event) {
-            if (this.collapsed) return;
             this.advancedOpen = !this.advancedOpen;
             if (this.advancedOpen) {
                 this.syncAdvancedPopover(event?.currentTarget);
@@ -411,8 +459,10 @@
                             <i class="menu-icon fas fa-rocket text-blue-500"></i>
                             <span class="menu-name">高级功能</span>
                         </button>
-                        <div class="submenu-popover" x-show="advancedOpen && !collapsed" x-transition.origin.left :style="`top:${advancedPopoverTop}px;left:${advancedPopoverLeft}px;`" style="display:none;" @click.stop>
+                        <div class="submenu-popover" x-show="advancedOpen" x-transition.origin.left :style="`top:${advancedPopoverTop}px;left:${advancedPopoverLeft}px;`" style="display:none;" @click.stop>
+                            @if(Auth::user()?->is_adminer)
                             <a class="submenu-item {{ request()->routeIs('advanced') ? 'active' : '' }}" href="{{ route('advanced') }}" @click="advancedOpen = false"><i class="fas fa-th-large"></i><span>总览</span></a>
+                            @endif
                             <a class="submenu-item {{ request()->is('advanced/image-process') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'image-process']) }}" @click="advancedOpen = false"><i class="fas fa-sliders-h"></i><span>图片编辑</span></a>
                             <a class="submenu-item {{ request()->is('advanced/ai-search') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'ai-search']) }}" @click="advancedOpen = false"><i class="fas fa-search"></i><span>AI检索</span></a>
                             <a class="submenu-item {{ request()->is('advanced/ai-prompt') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'ai-prompt']) }}" @click="advancedOpen = false"><i class="fas fa-magic"></i><span>AI提示词</span></a>
@@ -421,7 +471,9 @@
                                 <a class="submenu-item {{ request()->is('advanced/performance') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'performance']) }}" @click="advancedOpen = false"><i class="fas fa-gauge-high"></i><span>系统性能</span></a>
                             @endif
                             <a class="submenu-item {{ request()->is('advanced/drivers') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'drivers']) }}" @click="advancedOpen = false"><i class="fas fa-microchip"></i><span>处理驱动</span></a>
+                            @if(Auth::user()?->is_adminer)
                             <a class="submenu-item {{ request()->is('advanced/reviews') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'reviews']) }}" @click="advancedOpen = false"><i class="fas fa-user-check"></i><span>审核中心</span></a>
+                            @endif
                             <a class="submenu-item {{ request()->is('advanced/jobs') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'jobs']) }}" @click="advancedOpen = false"><i class="fas fa-tasks"></i><span>作业中心</span></a>
                             <a class="submenu-item {{ request()->is('advanced/team-permissions') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'team-permissions']) }}" @click="advancedOpen = false"><i class="fas fa-users-cog"></i><span>团队权限</span></a>
                         </div>
@@ -453,6 +505,10 @@
                 <div class="menu-group">
                     <p class="menu-title">系统</p>
                     <div class="menu-list">
+                        <x-nav-link :href="route('admin.console')" :active="request()->is('admin/console')">
+                            <x-slot name="icon"><i class="menu-icon fas fa-chart-line text-blue-500"></i></x-slot>
+                            <x-slot name="name">控制台</x-slot>
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.groups')" :active="request()->is('admin/groups*')">
                             <x-slot name="icon"><i class="menu-icon fas fa-users text-blue-500"></i></x-slot>
                             <x-slot name="name">角色组</x-slot>

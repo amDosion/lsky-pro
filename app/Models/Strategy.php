@@ -75,7 +75,7 @@ class Strategy extends Model
             $strategy->configs['url'] = rtrim($strategy->configs->get('url'), '/');
             if ($strategy->key == StrategyKey::Local) {
                 $symlink = self::getRootPath($strategy->configs['url']);
-                $target = $strategy->configs['root'] ?: config('filesystems.disks.uploads.root');
+                $target = config('filesystems.disks.uploads.root');
                 $linkPath = public_path($symlink);
                 if (! is_link($linkPath) && ! file_exists($linkPath)) {
                     (new Filesystem())->link($target, $linkPath);

@@ -36,71 +36,76 @@ class UserController extends Controller
         $user = Auth::user();
         $configs = $user->group->configs;
         $strategies = $user->group->strategies()->get();
-        $adminConsole = null;
-
-        if ($user->is_adminer) {
-            $carbon = Carbon::now();
-            $format = 'Y-m-d H:i:s';
-
-            $numbers = [
-                'today' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfDay()->format($format), $carbon->copy()->endOfDay()->format($format)])->count(),
-                'yesterday' => Image::query()->whereBetween('created_at', [$carbon->copy()->subDay()->startOfDay()->format($format), $carbon->copy()->subDay()->endOfDay()->format($format)])->count(),
-                'week' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfWeek()->format($format), $carbon->copy()->endOfWeek()->format($format)])->count(),
-                'month' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfMonth()->format($format), $carbon->copy()->endOfMonth()->format($format)])->count(),
-            ];
-
-            $start = Carbon::now()->subDays(30)->startOfDay();
-            $end = Carbon::now()->endOfDay();
-            $dates = Utils::makeDateRange($start->format('Y-m-d'), $end->format('Y-m-d'));
-            $fields = ['游客上传', '用户上传', '新用户'];
-
-            $images = Image::query()
-                ->whereBetween('created_at', [$start->format($format), $end->format($format)])
-                ->get(['user_id', 'created_at'])
-                ->transform(function (Image $image) {
-                    $image['date'] = $image->created_at->format('Y-m-d');
-                    return $image;
-                })->groupBy('date');
-
-            $users = User::query()
-                ->whereBetween('created_at', [$start->format($format), $end->format($format)])
-                ->get(['created_at'])
-                ->transform(function (User $item) {
-                    $item['date'] = $item->created_at->format('Y-m-d');
-                    return $item;
-                })->groupBy('date');
-
-            $data = collect(array_map(fn() => 0, array_flip($dates)));
-            $array = [
-                $data->merge($images->map(fn(Collection $items) => $items->whereNull('user_id')->count())),
-                $data->merge($images->map(fn(Collection $items) => $items->whereNotNull('user_id')->count())),
-                $data->merge($users->map(fn(Collection $items) => $items->count())),
-            ];
-            $datasets = collect($fields)->transform(function ($item, $index) use ($array) {
-                return [
-                    'name' => $item,
-                    'type' => 'line',
-                    'data' => $array[$index]->values(),
-                ];
-            });
-
-            $adminConsole = [
-                'overview' => [
-                    'images' => Image::query()->count(),
-                    'albums' => Album::query()->count(),
-                    'users' => User::query()->count(),
-                    'storage' => Image::query()->sum('size'),
-                ],
-                'numbers' => $numbers,
-                'dates' => $dates,
-                'datasets' => $datasets,
-                'fields' => $fields,
-            ];
-        }
-
-        return view('user.dashboard', compact('strategies', 'configs', 'user', 'adminConsole'));
+        return view('user.dashboard', compact('strategies', 'configs', 'user'));
     }
 
+
+    public function adminConsole(): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        abort_unless((bool) $user->is_adminer, 403);
+
+        $carbon = Carbon::now();
+        $format = 'Y-m-d H:i:s';
+
+        $numbers = [
+            'today' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfDay()->format($format), $carbon->copy()->endOfDay()->format($format)])->count(),
+            'yesterday' => Image::query()->whereBetween('created_at', [$carbon->copy()->subDay()->startOfDay()->format($format), $carbon->copy()->subDay()->endOfDay()->format($format)])->count(),
+            'week' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfWeek()->format($format), $carbon->copy()->endOfWeek()->format($format)])->count(),
+            'month' => Image::query()->whereBetween('created_at', [$carbon->copy()->startOfMonth()->format($format), $carbon->copy()->endOfMonth()->format($format)])->count(),
+        ];
+
+        $start = Carbon::now()->subDays(30)->startOfDay();
+        $end = Carbon::now()->endOfDay();
+        $dates = Utils::makeDateRange($start->format('Y-m-d'), $end->format('Y-m-d'));
+        $fields = ['游客上传', '用户上传', '新用户'];
+
+        $images = Image::query()
+            ->whereBetween('created_at', [$start->format($format), $end->format($format)])
+            ->get(['user_id', 'created_at'])
+            ->transform(function (Image $image) {
+                $image['date'] = $image->created_at->format('Y-m-d');
+                return $image;
+            })->groupBy('date');
+
+        $users = User::query()
+            ->whereBetween('created_at', [$start->format($format), $end->format($format)])
+            ->get(['created_at'])
+            ->transform(function (User $item) {
+                $item['date'] = $item->created_at->format('Y-m-d');
+                return $item;
+            })->groupBy('date');
+
+        $data = collect(array_map(fn() => 0, array_flip($dates)));
+        $array = [
+            $data->merge($images->map(fn(Collection $items) => $items->whereNull('user_id')->count())),
+            $data->merge($images->map(fn(Collection $items) => $items->whereNotNull('user_id')->count())),
+            $data->merge($users->map(fn(Collection $items) => $items->count())),
+        ];
+        $datasets = collect($fields)->transform(function ($item, $index) use ($array) {
+            return [
+                'name' => $item,
+                'type' => 'line',
+                'data' => $array[$index]->values(),
+            ];
+        });
+
+        $adminConsole = [
+            'overview' => [
+                'images' => Image::query()->count(),
+                'albums' => Album::query()->count(),
+                'users' => User::query()->count(),
+                'storage' => Image::query()->sum('size'),
+            ],
+            'numbers' => $numbers,
+            'dates' => $dates,
+            'datasets' => $datasets,
+            'fields' => $fields,
+        ];
+
+        return view('admin.console', compact('adminConsole'));
+    }
     public function settings(): View
     {
         return view('user.settings');
@@ -187,7 +192,7 @@ class UserController extends Controller
             ? $intelligence['control_plane']
             : null;
 
-        $aiConfig = app(AiProviderConfigService::class)->all();
+        $aiConfig = app(AiProviderConfigService::class)->allForUser($user);
         $activeAiProvider = (string) ($aiConfig['active_provider'] ?? 'gpt');
         $activeAiProviderConfig = $aiConfig['providers'][$activeAiProvider] ?? null;
         $aiConfigReady = is_array($activeAiProviderConfig)

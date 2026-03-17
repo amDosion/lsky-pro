@@ -5,17 +5,20 @@
 
 .images-loading.show {
     display: block;
+    overflow: hidden;
 }
 
 .images-loading-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
+    padding: 10px;
 }
 
 .images-loading-list {
     display: none;
     gap: 8px;
+    padding: 10px;
 }
 
 .images-loading.is-list .images-loading-grid {

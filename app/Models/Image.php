@@ -451,4 +451,14 @@ class Image extends Model
         }
         return $key;
     }
+
+    public function getDocumentViewerUrlAttribute(): ?string
+    {
+        $ext = strtolower($this->extension ?? '');
+        if (in_array($ext, ['pdf','doc','docx','xls','xlsx','csv','ppt','pptx','svg'])) {
+            return route('document.viewer', ['id' => $this->id]);
+        }
+        return null;
+    }
+
 }

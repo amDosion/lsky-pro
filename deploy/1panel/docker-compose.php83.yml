@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/php83/Dockerfile
-    image: lsky-pro-custom:php83
+    image: lsky-pro-custom:latest
     container_name: ${PANEL_APP_NAME:-lsky-pro}
     restart: unless-stopped
     ports:
@@ -18,11 +18,24 @@ services:
       PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-128M}
       PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-128M}
       PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
+      HF_HOME: /opt/models/huggingface
     volumes:
       - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
     healthcheck:
       test: ["CMD-SHELL", "bash /var/www/html/scripts/health/startup.sh"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - default
+      - 1panel-network
+
+networks:
+  default:
+    name: 1panel_default
+    external: true
+  1panel-network:
+    name: 1panel-network
+    external: true

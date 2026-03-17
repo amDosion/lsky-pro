@@ -140,7 +140,7 @@ return [
         GroupConfigKey::LimitPerDay => 300,
         GroupConfigKey::LimitPerWeek => 600,
         GroupConfigKey::LimitPerMonth => 999,
-        GroupConfigKey::AcceptedFileSuffixes => ['jpeg', 'jpg', 'png', 'gif', 'tif', 'bmp', 'ico', 'psd', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'raw', 'zip', 'rar'],
+        GroupConfigKey::AcceptedFileSuffixes => ['jpeg', 'jpg', 'png', 'gif', 'tif', 'tiff', 'bmp', 'ico', 'psd', 'webp', 'avif', 'heic', 'heif', 'svg', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'raw', 'cr2', 'nef', 'arw', 'dng', 'raf', 'zip', 'rar'],
         GroupConfigKey::ImageSaveFormat => '',
         GroupConfigKey::ImageSaveQuality => 75,
         GroupConfigKey::PathNamingRule => '{Y}/{m}/{d}',

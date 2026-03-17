@@ -1,7 +1,7 @@
 @props([
     'id' => 'images-loading',
-    'gridCount' => 8,
-    'listCount' => 6,
+    'gridCount' => 24,
+    'listCount' => 12,
     'show' => false,
 ])
 

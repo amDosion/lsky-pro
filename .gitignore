@@ -50,3 +50,6 @@ composer-setup.php
 .claude/
 
 .env.testing
+/models/
+/public/jpeg/
+*.patch
