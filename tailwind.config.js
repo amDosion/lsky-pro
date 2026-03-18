@@ -1,6 +1,8 @@
-const defaultTheme = require('tailwindcss/defaultTheme');
+import defaultTheme from 'tailwindcss/defaultTheme.js';
+import forms from '@tailwindcss/forms';
+import autoprefixer from 'autoprefixer';
 
-module.exports = {
+export default {
     darkMode: 'class',
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
@@ -25,5 +27,5 @@ module.exports = {
         },
     },
 
-    plugins: [require('@tailwindcss/forms'), require('autoprefixer')],
+    plugins: [forms, autoprefixer],
 };

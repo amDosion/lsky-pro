@@ -1,12 +1,18 @@
-window._ = require('lodash');
-window.$ = window.jQuery = require('jquery');
-window.toastr = require('toastr');
-window.Swal = require('sweetalert2')
-window.Swal = window.Swal.mixin({
+import _ from 'lodash';
+import $ from 'jquery';
+import toastr from 'toastr';
+import Swal from 'sweetalert2';
+import axios from 'axios';
+
+window._ = _;
+window.$ = $;
+window.jQuery = $;
+window.toastr = toastr;
+window.Swal = Swal.mixin({
     showCancelButton: true,
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-})
+});
 
 toastr.options = {
     "closeButton": true,
@@ -23,7 +29,7 @@ toastr.options = {
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 
-window.axios = require('axios');
+window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
