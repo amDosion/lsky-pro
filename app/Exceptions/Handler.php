@@ -81,6 +81,6 @@ class Handler extends ExceptionHandler
     {
         return $this->shouldReturnJson($request, $exception)
             ? $this->fail($exception->getMessage())->setStatusCode(401)
-            : redirect()->guest($exception->redirectTo() ?? route('login'));
+            : redirect()->guest($exception->redirectTo($request) ?? route('login'));
     }
 }
