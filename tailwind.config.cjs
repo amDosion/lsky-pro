@@ -1,15 +1,13 @@
-import defaultTheme from 'tailwindcss/defaultTheme.js';
-import forms from '@tailwindcss/forms';
+const defaultTheme = require('tailwindcss/defaultTheme');
+const forms = require('@tailwindcss/forms');
 
-
-export default {
+module.exports = {
     darkMode: 'class',
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
     ],
-
     theme: {
         extend: {
             fontFamily: {
@@ -20,12 +18,10 @@ export default {
             },
         },
     },
-
     variants: {
         extend: {
             opacity: ['disabled'],
         },
     },
-
     plugins: [forms],
 };

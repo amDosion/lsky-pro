@@ -54,6 +54,13 @@ export default defineConfig({
         },
     },
     css: {
+        postcss: {
+            plugins: [
+                (await import('postcss-import')).default(),
+                (await import('tailwindcss')).default({ config: './tailwind.config.cjs' }),
+                (await import('autoprefixer')).default(),
+            ],
+        },
         preprocessorOptions: {
             less: { math: 'always' },
         },
