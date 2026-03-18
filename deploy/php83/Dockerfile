@@ -50,6 +50,8 @@ RUN set -eux; \
         pgsql \
         pdo_pgsql \
     && pecl install redis \
+    && pecl install vips \
+    && docker-php-ext-enable vips \
     && docker-php-ext-enable redis \
     && pecl install imagick \
     && docker-php-ext-enable imagick \

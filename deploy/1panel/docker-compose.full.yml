@@ -1,0 +1,169 @@
+# =============================================================================
+# Lsky Pro - 完整版 Docker Compose
+# =============================================================================
+# 此文件包含所有服务的独立定义，是 docker-compose.php83.yml 的完善版。
+# 现有的 docker-compose.php83.yml 不受影响，此文件为备用完整方案。
+#
+# 使用方式:
+#   docker compose -f deploy/1panel/docker-compose.full.yml up -d
+#
+# 服务概览:
+#   web    - 主应用 (Apache + PHP 8.3)，处理 HTTP 请求
+#   worker - 队列消费者，后台异步处理上传、AI分析、webhook 等任务
+#   redis  - 缓存/会话/队列后端，开启 AOF 持久化
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # web: 主应用服务
+  # ---------------------------------------------------------------------------
+  # 作用: 运行 Apache + PHP-FPM，接收并响应所有 HTTP 请求。
+  # 包含 Laravel 前端路由、API 接口、管理后台。
+  # 依赖 redis 提供缓存/会话存储，依赖 worker 处理异步队列任务。
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/php83/Dockerfile
+    image: lsky-pro-custom:latest
+    container_name: lsky-pro
+    restart: unless-stopped
+    ports:
+      - 8089:80
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: false
+      INIT_AUTO_BOOTSTRAP: false
+      PHP_MEMORY_LIMIT: 512M
+      PHP_UPLOAD_MAX_FILESIZE: 128M
+      PHP_POST_MAX_SIZE: 128M
+      PHP_MAX_EXECUTION_TIME: 120
+      HF_HOME: /opt/models/huggingface
+      # 在完整版中，Redis 通过内部服务名连接
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 6J2I2QTogajqyrgbw6%i
+    volumes:
+      - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
+    healthcheck:
+      test: [CMD-SHELL, bash /var/www/html/scripts/health/startup.sh]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    networks:
+      - lsky-network
+      - 1panel-network
+
+  # ---------------------------------------------------------------------------
+  # worker: 队列处理服务
+  # ---------------------------------------------------------------------------
+  # 作用: 运行 Laravel Queue Worker，持续消费 Redis 队列中的异步任务。
+  # 处理的任务包括:
+  #   - upload-critical: 上传后的关键处理（缩略图生成、格式转换等）
+  #   - default: 默认队列（AI 图像分析、webhook 回调、邮件通知等）
+  # 使用与 web 相同的镜像和代码卷，确保代码一致性。
+  # 不对外暴露端口，仅通过 Redis 与 web 服务通信。
+  # ---------------------------------------------------------------------------
+  worker:
+    image: lsky-pro-custom:latest
+    container_name: lsky-pro-worker
+    restart: unless-stopped
+    entrypoint: [/usr/local/bin/lsky-entrypoint]
+    command:
+      - php
+      - artisan
+      - queue:work
+      - redis
+      - --queue=upload-critical,default
+      - --sleep=3
+      - --tries=3
+      - --max-time=3600
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: false
+      PHP_MEMORY_LIMIT: 512M
+      HF_HOME: /opt/models/huggingface
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 6J2I2QTogajqyrgbw6%i
+    volumes:
+      - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - lsky-network
+      - 1panel-network
+
+  # ---------------------------------------------------------------------------
+  # redis: 缓存/会话/队列后端
+  # ---------------------------------------------------------------------------
+  # 作用: 提供高性能的键值存储，同时承担三个角色:
+  #   1. 缓存后端 (CACHE_DRIVER=redis) - 加速页面和数据查询
+  #   2. 会话存储 (SESSION_DRIVER=redis) - 管理用户登录状态
+  #   3. 队列后端 (QUEUE_CONNECTION=redis) - 存储和分发异步任务
+  # 开启 AOF (appendonly) 持久化，防止重启后队列任务和会话数据丢失。
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: lsky-pro-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - 6J2I2QTogajqyrgbw6%i
+      - --appendonly
+      - yes
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, -a, 6J2I2QTogajqyrgbw6%i, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - lsky-network
+
+# =============================================================================
+# 网络配置
+# =============================================================================
+# lsky-network: 内部网络，web/worker/redis 三个服务之间通信
+# 1panel-network: 外部网络，与 1Panel 管理的其他服务（如 Nginx 反代、MySQL）通信
+# =============================================================================
+networks:
+  lsky-network:
+    name: lsky-network
+    driver: bridge
+  1panel-network:
+    name: 1panel-network
+    external: true
+
+# =============================================================================
+# 数据卷配置
+# =============================================================================
+# redis-data: Redis AOF 持久化数据，防止容器重建后数据丢失
+# 注: 上传文件和应用代码通过 bind mount (../..:/var/www/html) 直接挂载宿主机目录，
+#     无需额外的 named volume。
+# =============================================================================
+volumes:
+  redis-data:
+    name: lsky-redis-data
+    driver: local
