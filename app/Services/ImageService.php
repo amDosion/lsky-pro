@@ -706,7 +706,7 @@ class ImageService
                     $height = (int)($h * $scale);
                 }
 
-                $img->cover($width, $height, 'center')->toPng(quality: 60)->save($pathname);
+                $img->cover($width, $height, 'center')->toPng()->save($pathname);
                 $img->destroy();
             } catch (\Throwable $e) {
                 Utils::e($e, '生成缩略图时出现异常');

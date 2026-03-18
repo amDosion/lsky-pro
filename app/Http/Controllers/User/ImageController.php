@@ -344,12 +344,12 @@ class ImageController extends Controller
             } elseif ($ext === 'raw') {
                 $ok = $this->convertRawToPng($sourcePath, $outputPath);
                 if (! $ok) {
-                    (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng(quality: 88)->save($outputPath);
+                    (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng()->save($outputPath);
                 }
             } elseif (in_array($ext, ['zip', 'rar'], true)) {
                 $this->renderArchiveIconPreviewPng($outputPath, $ext);
             } else {
-                (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng(quality: 88)->save($outputPath);
+                (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng()->save($outputPath);
             }
         } finally {
             @unlink($sourcePath);
