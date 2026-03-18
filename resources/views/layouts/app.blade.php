@@ -222,6 +222,7 @@
 
 </div>
 
+<script src="{{ asset("js/vendor/jquery.min.js") }}"></script>
 <script src="{{ asset('js/app.js') }}?t=20220817"></script>
 @include('common.notice', ['_is_notice' => ($_is_notice ?? null)])
 <script>

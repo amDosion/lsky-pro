@@ -2,8 +2,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/justified-gallery/justifiedGallery.min.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('css/context-js/context-js.css') }}"> --}}
-    @vite('resources/css/context-js.less')
+    <link rel="stylesheet" href="{{ asset('css/context-js/context-js.css') }}">
     <style>
         @include('components.images-workspace-styles')
         @include('components.images-loading-styles')

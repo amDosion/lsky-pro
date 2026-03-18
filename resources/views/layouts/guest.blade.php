@@ -25,6 +25,7 @@
         </div>
     </body>
     <!-- Scripts -->
+    <script src="{{ asset("js/vendor/jquery.min.js") }}"></script>
     <script src="{{ asset('js/app.js') }}?t=20220817"></script>
     @if(file_exists(public_path('js/custom.js')))
         <script src="{{ asset('js/custom.js') }}"></script>
