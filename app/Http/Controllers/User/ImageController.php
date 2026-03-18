@@ -19,7 +19,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Intervention\Image\Facades\Image as InterventionImage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 
 class ImageController extends Controller
 {
@@ -343,12 +344,12 @@ class ImageController extends Controller
             } elseif ($ext === 'raw') {
                 $ok = $this->convertRawToPng($sourcePath, $outputPath);
                 if (! $ok) {
-                    InterventionImage::make($sourcePath)->encode('png', 88)->save($outputPath);
+                    (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng(quality: 88)->save($outputPath);
                 }
             } elseif (in_array($ext, ['zip', 'rar'], true)) {
                 $this->renderArchiveIconPreviewPng($outputPath, $ext);
             } else {
-                InterventionImage::make($sourcePath)->encode('png', 88)->save($outputPath);
+                (new ImageManager(new ImagickDriver()))->read($sourcePath)->toPng(quality: 88)->save($outputPath);
             }
         } finally {
             @unlink($sourcePath);

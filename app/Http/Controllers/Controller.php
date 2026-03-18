@@ -23,7 +23,8 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
-use Intervention\Image\Facades\Image as InterventionImage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -206,7 +207,7 @@ class Controller extends BaseController
         // 浏览器无法预览的图片，改为 png 格式输出
         if (in_array($image->extension, ['psd', 'tif', 'bmp'])) {
             $mimetype = 'image/png';
-            $contents = InterventionImage::make($contents)->encode('png')->getEncoded();
+            $contents = (string) (new ImageManager(new ImagickDriver()))->read($contents)->toPng();
         }
 
         out:

@@ -45,9 +45,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image as InterventionImage;
-use Intervention\Image\Imagick\Font;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
+use Intervention\Image\Typography\FontFactory;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemAdapter;
@@ -198,11 +198,12 @@ class ImageService
                 // 获取拓展名，判断是否需要转换
                 $format = $format ?: $extension;
                 $filename = Str::replaceLast($extension, $format, $file->getClientOriginalName());
-                $handleImage = InterventionImage::make($file)->save($format, $quality);
-                $file = new UploadedFile($handleImage->basePath(), $filename, $handleImage->mime());
+                $manager = new ImageManager(new ImagickDriver());
+                $tmpPath = sys_get_temp_dir() . '/' . uniqid('lsky_') . '.' . $format;
+                $manager->read($file->getRealPath())->encodeByExtension($format, quality: $quality)->save($tmpPath);
+                $file = new UploadedFile($tmpPath, $filename, mime_content_type($tmpPath));
                 // 重新设置拓展名
                 $extension = $format;
-                $handleImage->destroy();
             }
 
             // 是否启用水印，覆盖原图片
@@ -633,13 +634,14 @@ class ImageService
      *
      * @param  mixed  $image
      * @param  Collection  $configs
-     * @return \Intervention\Image\Image
+     * @return \Intervention\Image\Interfaces\ImageInterface
      */
-    public function stickWatermark(mixed $image, Collection $configs): \Intervention\Image\Image
+    public function stickWatermark(mixed $image, Collection $configs): \Intervention\Image\Interfaces\ImageInterface
     {
         $driver = $configs->get('driver');
         $options = collect($configs->get("drivers")[$driver]);
-        $image = InterventionImage::make($image);
+        $manager = new ImageManager(new ImagickDriver());
+        $image = $manager->read($image);
 
         $position = $options->get(FontOption::Position, 'bottom-right');
         $offsetX = (int) $options->get(FontOption::X, 10);
@@ -659,13 +661,13 @@ class ImageService
             // 平铺水印
             for ($x = 0; $x < $imageWidth; $x++) {
                 for ($y = 0; $y < $imageHeight; $y++) {
-                    $image->insert($watermark, '', $x, $y);
+                    $image->place($watermark, '', $x, $y);
                     $y += $watermarkHeight + $offsetY;
                 }
                 $x += $watermarkWidth + $offsetX;
             }
         } else {
-            $image->insert($watermark, $position, $offsetX, $offsetY);
+            $image->place($watermark, $position, $offsetX, $offsetY);
         }
 
         return $image;
@@ -693,7 +695,7 @@ class ImageService
 
                 @ini_set('memory_limit', '512M');
 
-                $img = InterventionImage::make($data);
+                $img = (new ImageManager(new ImagickDriver()))->read($data);
 
                 $width = $w = $image->width;
                 $height = $h = $image->height;
@@ -704,7 +706,7 @@ class ImageService
                     $height = (int)($h * $scale);
                 }
 
-                $img->fit($width, $height, fn($constraint) => $constraint->upsize())->encode('png', 60)->save($pathname);
+                $img->cover($width, $height, fn($constraint) => $constraint->upsize())->toPng(quality: 60)->save($pathname);
                 $img->destroy();
             } catch (\Throwable $e) {
                 Utils::e($e, '生成缩略图时出现异常');
@@ -717,21 +719,23 @@ class ImageService
      *
      * @param  string  $driver
      * @param  Collection  $options
-     * @return \Intervention\Image\Image
+     * @return \Intervention\Image\Interfaces\ImageInterface
      */
-    private function getWatermark(string $driver, Collection $options): \Intervention\Image\Image
+    private function getWatermark(string $driver, Collection $options): \Intervention\Image\Interfaces\ImageInterface
     {
-        $manager = new ImageManager(config('image'));
+        $manager = new ImageManager(new ImagickDriver());
 
         if ($driver === 'image') {
-            $watermark = $manager->make(storage_path('app/public/'.trim($options->get(ImageOption::Image), '/')));
+            $watermark = $manager->read(storage_path('app/public/'.trim($options->get(ImageOption::Image), '/')));
             $opacity = (int) $options->get(ImageOption::Opacity, 0);
             $rotate = (int) $options->get(ImageOption::Rotate, 0);
             $width = $options->get(ImageOption::Width, 0);
             $height = $options->get(ImageOption::Height, 0);
 
             if ($opacity && $opacity != 100) {
-                $watermark->opacity((int) min($opacity, 100));
+                // v3: opacity 通过 Imagick 原生实现
+                $core = $watermark->core()->native();
+                $core->evaluateImage(\Imagick::EVALUATE_MULTIPLY, min($opacity, 100) / 100, \Imagick::CHANNEL_ALPHA);
             }
 
             if ($rotate) {
@@ -739,24 +743,34 @@ class ImageService
             }
 
             if ($width + $height > 0) {
-                $watermark->resize($width ?: null, $height ?: null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+                $watermark->scaleDown(width: $width ?: null, height: $height ?: null);
             }
             return $watermark;
         } else {
-            $text = $options->get(FontOption::Text, Utils::config(ConfigKey::AppName));
-            $font = new Font(urldecode($text));
-            $font->valign('top')
-                ->file(storage_path('app/public/'.trim($options->get(FontOption::Font), '/')))
-                ->size((int) $options->get(FontOption::Size, 50))
-                ->angle((int) $options->get(FontOption::Angle, 0))
-                ->color($options->get(FontOption::Color, '000000')); // 十六进制 or rgba
-            $box = $font->getBoxSize();
-            $canvas = $manager->canvas($box['width'], $box['height']);
-            $font->applyToImage($canvas);
-            return $manager->make($canvas);
+            $text = urldecode($options->get(FontOption::Text, Utils::config(ConfigKey::AppName)));
+            $fontFile = storage_path('app/public/'.trim($options->get(FontOption::Font), '/'));
+            $fontSize = (int) $options->get(FontOption::Size, 50);
+            $fontAngle = (int) $options->get(FontOption::Angle, 0);
+            $fontColor = $options->get(FontOption::Color, '000000');
+
+            // v3: 先用 Imagick 计算文字尺寸
+            $draw = new \ImagickDraw();
+            $draw->setFont($fontFile);
+            $draw->setFontSize($fontSize);
+            $metrics = (new \Imagick())->queryFontMetrics($draw, $text);
+            $boxW = (int) ceil($metrics['textWidth'] + 10);
+            $boxH = (int) ceil($metrics['textHeight'] + 10);
+
+            // 创建画布并写入文字
+            $canvas = $manager->create($boxW, $boxH);
+            $canvas->text($text, 5, 5, function ($font) use ($fontFile, $fontSize, $fontAngle, $fontColor) {
+                $font->filename($fontFile);
+                $font->size($fontSize);
+                $font->color($fontColor);
+                $font->angle($fontAngle);
+                $font->valign('top');
+            });
+            return $canvas;
         }
     }
 

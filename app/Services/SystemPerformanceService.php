@@ -110,6 +110,7 @@ class SystemPerformanceService
                 'opcache' => extension_loaded('Zend OPcache'),
                 'swoole' => extension_loaded('swoole'),
             ],
+            'versions' => $this->collectVersions(),
             'database' => [
                 'default_connection' => (string) config('database.default'),
                 'driver' => (string) DB::connection()->getDriverName(),
@@ -133,6 +134,64 @@ class SystemPerformanceService
                 'temp_preview_writable' => $this->isWritableOrCreatable(public_path(trim(config('app.thumbnail_path'), '/').'/previews')),
             ],
             'processing' => $this->processingManager->status(),
+        ];
+    }
+
+    private function collectVersions(): array
+    {
+        // Composer 依赖版本（自动从 installed.json 读取）
+        $composerVersions = [];
+        $installedPath = base_path('vendor/composer/installed.json');
+        if (file_exists($installedPath)) {
+            $installed = json_decode(file_get_contents($installedPath), true);
+            $packages = $installed['packages'] ?? $installed;
+            $track = [
+                'laravel/framework', 'laravel/sanctum', 'laravel/breeze',
+                'laravel/octane', 'intervention/image', 'league/flysystem-aws-s3-v3',
+                'guzzlehttp/guzzle', 'nesbot/carbon',
+            ];
+            foreach ($packages as $pkg) {
+                $name = $pkg['name'] ?? '';
+                if (in_array($name, $track, true)) {
+                    $composerVersions[$name] = $pkg['version'] ?? $pkg['version_normalized'] ?? 'unknown';
+                }
+            }
+        }
+
+        // 系统工具版本（自动检测，使用固定命令无用户输入）
+        $tools = [];
+        $toolChecks = [
+            'ghostscript' => ['gs', '--version'],
+            'libreoffice' => ['soffice', '--version'],
+            'dcraw' => ['which', 'dcraw'],
+            'exiftool' => ['exiftool', '-ver'],
+            'pdftoppm' => ['which', 'pdftoppm'],
+        ];
+        foreach ($toolChecks as $name => $cmd) {
+            $output = '';
+            try {
+                $process = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+                if (is_resource($process)) {
+                    $output = trim(stream_get_contents($pipes[1]));
+                    fclose($pipes[1]);
+                    fclose($pipes[2]);
+                    proc_close($process);
+                }
+            } catch (\Throwable $e) {}
+            $tools[$name] = $output ?: null;
+        }
+
+        // ImageMagick 版本
+        if (extension_loaded('imagick')) {
+            $imagick = new \Imagick();
+            $verInfo = $imagick->getVersion();
+            $tools['imagick'] = $verInfo['versionString'] ?? null;
+        }
+
+        return [
+            'composer' => $composerVersions,
+            'tools' => $tools,
+            'os' => php_uname('s') . ' ' . php_uname('r') . ' ' . php_uname('m'),
         ];
     }
 

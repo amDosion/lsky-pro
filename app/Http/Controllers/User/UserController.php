@@ -233,6 +233,7 @@ class UserController extends Controller
                 'laravel_version' => $appSummary['laravel_version'] ?? app()->version(),
                 'timezone' => $appSummary['timezone'] ?? (string) config('app.timezone', 'UTC'),
                 'debug' => $appSummary['debug'] ?? (bool) config('app.debug'),
+                'versions' => $summary['versions'] ?? [],
             ],
             $summary['runtime'] ?? [],
         );

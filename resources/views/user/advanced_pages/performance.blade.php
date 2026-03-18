@@ -161,6 +161,25 @@
                     <div class="perf-row"><div class="perf-row-k">数据库驱动</div><div class="perf-row-v">{{ $runtime['database_driver'] }}</div></div>
                     <div class="perf-row"><div class="perf-row-k">数据库状态</div><div class="perf-row-v">{{ $runtime['database_message'] }}</div></div>
                     <div class="perf-row"><div class="perf-row-k">服务器时间</div><div class="perf-row-v">{{ $runtime['server_time'] }}</div></div>
+                    <div class="perf-row"><div class="perf-row-k">操作系统</div><div class="perf-row-v">{{ $runtime['versions']['os'] ?? '-' }}</div></div>
+                </div>
+            </div>
+
+            <div class="adv-panel">
+                <div class="adv-panel-title">框架与依赖版本</div>
+                <div class="perf-grid" style="display:grid;gap:6px;">
+                    @foreach(($runtime['versions']['composer'] ?? []) as $pkg => $ver)
+                    <div class="perf-row"><div class="perf-row-k">{{ $pkg }}</div><div class="perf-row-v">{{ $ver }}</div></div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="adv-panel">
+                <div class="adv-panel-title">系统工具</div>
+                <div class="perf-grid" style="display:grid;gap:6px;">
+                    @foreach(($runtime['versions']['tools'] ?? []) as $tool => $ver)
+                    <div class="perf-row"><div class="perf-row-k">{{ $tool }}</div><div class="perf-row-v">{{ $ver ?: '未安装' }}</div></div>
+                    @endforeach
                 </div>
             </div>
         </section>
