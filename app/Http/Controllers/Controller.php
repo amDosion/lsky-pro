@@ -176,7 +176,7 @@ class Controller extends BaseController
                     $configs->get('mode', Mode::Overlay) == Mode::Dynamic &&
                     ! in_array($image->extension, ['ico', 'gif'])
                 ) {
-                    $contents = $service->stickWatermark($contents, $configs)->encode()->getEncoded();
+                    $contents = (string) $service->stickWatermark($contents, $configs)->toPng();
                 }
                 $cacheTtl = (int)$image->group?->configs->get(GroupConfigKey::ImageCacheTtl, 0);
                 // 是否启用了缓存

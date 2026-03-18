@@ -212,9 +212,9 @@ class ImageService
                 collect($configs->get(GroupConfigKey::WatermarkConfigs))->get('mode', Mode::Overlay) == Mode::Overlay
             ) {
                 $watermarkImage = $this->stickWatermark($file, collect($configs->get(GroupConfigKey::WatermarkConfigs)));
-                $watermarkImage->save();
-                $file = new UploadedFile($watermarkImage->basePath(), $file->getClientOriginalName(), $file->getMimeType());
-                $watermarkImage->destroy();
+                $tmpWatermark = sys_get_temp_dir() . '/' . uniqid('wm_') . '.' . $extension;
+                $watermarkImage->save($tmpWatermark);
+                $file = new UploadedFile($tmpWatermark, $file->getClientOriginalName(), mime_content_type($tmpWatermark));
             }
         }
 
@@ -707,7 +707,6 @@ class ImageService
                 }
 
                 $img->cover($width, $height, 'center')->toPng()->save($pathname);
-                $img->destroy();
             } catch (\Throwable $e) {
                 Utils::e($e, '生成缩略图时出现异常');
             }
