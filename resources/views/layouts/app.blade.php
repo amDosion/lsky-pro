@@ -10,9 +10,10 @@
     <title>{{ \App\Utils::config(\App\Enums\ConfigKey::AppName) }}</title>
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20220817">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20220817">
+    {{-- <link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20220817"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20220817"> --}}
+    @vite(['resources/css/fontawesome.less', 'resources/css/common.less', 'resources/css/app.css'])
     <link rel="stylesheet" href="{{ asset('css/lsky-ui.css') }}">
 
     <style>
