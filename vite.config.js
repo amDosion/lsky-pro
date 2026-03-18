@@ -6,36 +6,36 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [
+        inject({
+            include: ['resources/**/*.js'],
+            exclude: ['resources/js/bootstrap.js', 'resources/js/jquery-shim.js'],
+            $: 'jquery',
+            jQuery: 'jquery',
+        }),
         laravel({
             input: [
+                'resources/js/app.js',
                 'resources/css/app.css',
                 'resources/css/fontawesome.less',
                 'resources/css/common.less',
                 'resources/css/gallery.less',
                 'resources/css/context-js.less',
-                'resources/js/app.js',
             ],
             refresh: true,
         }),
-        inject({
-            include: ['resources/**/*.js'],
-            exclude: ['resources/js/bootstrap.js'],
-            $: 'jquery',
-            jQuery: 'jquery',
-            'window.jQuery': 'jquery',
-        }),
         viteStaticCopy({
             targets: [
+                { src: 'node_modules/jquery/dist/jquery.min.js', dest: 'js/vendor' },
                 { src: 'node_modules/echarts/dist/echarts.min.js', dest: 'js/echarts' },
                 { src: 'node_modules/clipboard/dist/clipboard.min.js', dest: 'js/clipboard' },
                 { src: 'node_modules/copy-image-clipboard/dist/index.browser.js', dest: 'js/clipboard' },
                 { src: 'node_modules/dragselect/dist/ds.min.js', dest: 'js/dragselect' },
                 { src: 'node_modules/masonry-layout/dist/masonry.pkgd.min.js', dest: 'js/masonry' },
                 { src: 'node_modules/imagesloaded/imagesloaded.pkgd.min.js', dest: 'js/imagesloaded' },
-                { src: 'node_modules/justifiedGallery/dist/css/justifiedGallery.min.css', dest: 'css/justified-gallery' },
                 { src: 'node_modules/justifiedGallery/dist/js/jquery.justifiedGallery.min.js', dest: 'js/justified-gallery' },
-                { src: 'node_modules/viewerjs/dist/viewer.min.css', dest: 'css/viewer-js' },
+                { src: 'node_modules/justifiedGallery/dist/css/justifiedGallery.min.css', dest: 'css/justified-gallery' },
                 { src: 'node_modules/viewerjs/dist/viewer.min.js', dest: 'js/viewer-js' },
+                { src: 'node_modules/viewerjs/dist/viewer.min.css', dest: 'css/viewer-js' },
                 { src: 'node_modules/blueimp-file-upload/js/jquery.fileupload.js', dest: 'js/blueimp-file-upload' },
                 { src: 'node_modules/blueimp-file-upload/js/jquery.iframe-transport.js', dest: 'js/blueimp-file-upload' },
                 { src: 'node_modules/blueimp-file-upload/js/vendor/jquery.ui.widget.js', dest: 'js/blueimp-file-upload' },
@@ -47,17 +47,15 @@ export default defineConfig({
             ],
         }),
     ],
-    css: {
-        preprocessorOptions: {
-            less: {
-                math: 'always',
-                paths: [path.resolve('node_modules')],
-            },
-        },
-    },
     resolve: {
         alias: {
             '~': '/node_modules',
+            'jquery': path.resolve(__dirname, 'resources/js/jquery-shim.js'),
+        },
+    },
+    css: {
+        preprocessorOptions: {
+            less: { math: 'always' },
         },
     },
 });
