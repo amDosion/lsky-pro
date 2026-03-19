@@ -2,16 +2,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "mix:dev": "mix --mix-config=webpack.mix.cjs",
-        "mix:prod": "mix --production --mix-config=webpack.mix.cjs",
-        "watch": "mix watch --mix-config=webpack.mix.cjs",
-        "watch-poll": "mix watch --mix-config=webpack.mix.cjs -- --watch-options-poll=1000",
-        "hot": "mix watch --hot --mix-config=webpack.mix.cjs",
         "build:js": "esbuild resources/js/app.js --bundle --format=iife --minify --sourcemap=external --target=es2020 --outfile=public/js/app.js",
         "build:css": "vite build",
-        "build:all": "npm run build:js && npm run build:css"
+        "build": "npm run build:js && npm run build:css"
     },
     "devDependencies": {
         "@fortawesome/fontawesome-free": "^5.15.4",
@@ -33,10 +26,8 @@
         "jquery": "^3.6.0",
         "jquery.photoswipe": "^1.1.1",
         "justifiedGallery": "^3.8.1",
-        "laravel-mix": "^6.0.6",
         "laravel-vite-plugin": "^1.3.0",
         "less": "^4.1.2",
-        "less-loader": "^10.2.0",
         "lodash": "^4.17.21",
         "masonry-layout": "^4.2.2",
         "postcss": "^8.2.1",
