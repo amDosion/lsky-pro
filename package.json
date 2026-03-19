@@ -8,7 +8,10 @@
         "mix:prod": "mix --production --mix-config=webpack.mix.cjs",
         "watch": "mix watch --mix-config=webpack.mix.cjs",
         "watch-poll": "mix watch --mix-config=webpack.mix.cjs -- --watch-options-poll=1000",
-        "hot": "mix watch --hot --mix-config=webpack.mix.cjs"
+        "hot": "mix watch --hot --mix-config=webpack.mix.cjs",
+        "build:js": "esbuild resources/js/app.js --bundle --format=iife --minify --sourcemap=external --target=es2020 --outfile=public/js/app.js",
+        "build:css": "vite build",
+        "build:all": "npm run build:js && npm run build:css"
     },
     "devDependencies": {
         "@fortawesome/fontawesome-free": "^5.15.4",

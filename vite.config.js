@@ -1,20 +1,11 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import inject from '@rollup/plugin-inject';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import path from 'path';
 
 export default defineConfig({
     plugins: [
-        inject({
-            include: ['resources/**/*.js'],
-            exclude: ['resources/js/bootstrap.js', 'resources/js/jquery-shim.js'],
-            $: 'jquery',
-            jQuery: 'jquery',
-        }),
         laravel({
             input: [
-                'resources/js/app.js',
                 'resources/css/app.css',
                 'resources/css/fontawesome.less',
                 'resources/css/common.less',
@@ -25,7 +16,6 @@ export default defineConfig({
         }),
         viteStaticCopy({
             targets: [
-                { src: 'node_modules/jquery/dist/jquery.min.js', dest: 'js/vendor' },
                 { src: 'node_modules/echarts/dist/echarts.min.js', dest: 'js/echarts' },
                 { src: 'node_modules/clipboard/dist/clipboard.min.js', dest: 'js/clipboard' },
                 { src: 'node_modules/copy-image-clipboard/dist/index.browser.js', dest: 'js/clipboard' },
@@ -50,7 +40,6 @@ export default defineConfig({
     resolve: {
         alias: {
             '~': '/node_modules',
-            'jquery': path.resolve(__dirname, 'resources/js/jquery-shim.js'),
         },
     },
     css: {
