@@ -11,8 +11,8 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
     {{-- <link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}"> --}}
-    {{-- <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20220817"> --}}
-    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20220817"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20260319"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20260319"> --}}
     @vite(['resources/css/fontawesome.less', 'resources/css/common.less', 'resources/css/app.css'])
     <link rel="stylesheet" href="{{ asset('css/lsky-ui.css') }}">
 
@@ -223,8 +223,7 @@
 
 </div>
 
-<script src="{{ asset("js/vendor/jquery.min.js") }}"></script>
-<script src="{{ asset('js/app.js') }}?t=20220817"></script>
+<script src="{{ asset('js/app.js') }}?t=20260319"></script>
 @include('common.notice', ['_is_notice' => ($_is_notice ?? null)])
 <script>
     let updateShellLayout = function () {

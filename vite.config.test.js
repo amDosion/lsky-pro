@@ -1,20 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'path';
-import inject from '@rollup/plugin-inject';
 
-// 纯 JS 构建测试：输出 IIFE 格式到 public/js/app.js
+// JS IIFE 构建：jQuery 打包在内，toastr 正确获取 jQuery
 export default defineConfig({
-    plugins: [
-        inject({
-            include: ['resources/**/*.js'],
-            exclude: ['resources/js/bootstrap.js', 'resources/js/jquery-shim.js'],
-            $: 'jquery',
-            jQuery: 'jquery',
-        }),
-    ],
     resolve: {
         alias: {
-            'jquery': path.resolve('/opt/1panel/apps/lsky-pro', 'resources/js/jquery-shim.js'),
+            '~': '/node_modules',
         },
     },
     build: {
@@ -26,9 +17,6 @@ export default defineConfig({
             name: 'LskyApp',
             formats: ['iife'],
             fileName: () => 'js/app.js',
-        },
-        rollupOptions: {
-            external: [],
         },
     },
 });
