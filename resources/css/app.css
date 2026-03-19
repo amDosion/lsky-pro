@@ -1,3 +1,18 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+/* Fix: Tailwind preflight resets button background to transparent,
+   which breaks SweetAlert2 button visibility */
+.swal2-confirm {
+  background-color: #3085d6 !important;
+  color: #fff !important;
+}
+.swal2-cancel {
+  background-color: #6c757d !important;
+  color: #fff !important;
+}
+.swal2-deny {
+  background-color: #d33 !important;
+  color: #fff !important;
+}
