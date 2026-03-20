@@ -14,8 +14,8 @@
         {{-- <link rel="stylesheet" href="{{ asset('css/fontawesome.css') }}"> --}}
 
         <!-- Styles -->
-        {{-- <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20260319"> --}}
-        {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20260319"> --}}
+        {{-- <link rel="stylesheet" href="{{ asset('css/common.css') }}?t=20260320"> --}}
+        {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}?t=20260320"> --}}
         @vite(['resources/css/fontawesome.less', 'resources/css/common.less', 'resources/css/app.css'])
 
         @stack('styles')
@@ -26,7 +26,7 @@
         </div>
     </body>
     <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}?t=20260319"></script>
+    <script src="{{ asset('js/app.js') }}?t=20260320"></script>
     @if(file_exists(public_path('js/custom.js')))
         <script src="{{ asset('js/custom.js') }}"></script>
     @endif
