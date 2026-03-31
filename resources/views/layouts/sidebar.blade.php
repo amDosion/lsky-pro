@@ -474,7 +474,9 @@
                             @if(Auth::user()?->is_adminer)
                             <a class="submenu-item {{ request()->is('advanced/reviews') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'reviews']) }}" @click="advancedOpen = false"><i class="fas fa-user-check"></i><span>审核中心</span></a>
                             @endif
+                            @if(Auth::user()?->is_adminer)
                             <a class="submenu-item {{ request()->is('advanced/jobs') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'jobs']) }}" @click="advancedOpen = false"><i class="fas fa-tasks"></i><span>作业中心</span></a>
+                            @endif
                             <a class="submenu-item {{ request()->is('advanced/team-permissions') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'team-permissions']) }}" @click="advancedOpen = false"><i class="fas fa-users-cog"></i><span>团队权限</span></a>
                         </div>
                     </div>

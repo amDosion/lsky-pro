@@ -30,7 +30,7 @@ class IntelligenceController extends Controller
         /** @var User $user */
         $user = Auth::user();
         if (! $user->is_adminer) {
-            return $this->fail('仅管理员可预览回填任务');
+            return $this->fail('仅管理员可预览回填任务')->setStatusCode(403);
         }
 
         try {
@@ -77,7 +77,7 @@ class IntelligenceController extends Controller
         /** @var User $user */
         $user = Auth::user();
         if (! $user->is_adminer) {
-            return $this->fail('仅管理员可执行回填任务');
+            return $this->fail('仅管理员可执行回填任务')->setStatusCode(403);
         }
 
         try {

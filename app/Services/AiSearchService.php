@@ -103,7 +103,9 @@ class AiSearchService
         SELECT 1 FROM image_intelligence_terms iit
         WHERE iit.image_id = images.id AND iit.normalized_term LIKE ?
     ) THEN 34 ELSE 0 END) +
-    (CASE WHEN COALESCE(image_intelligence_records.ocr_text, COALESCE(images.ocr_text, '')) LIKE ? THEN 30 ELSE 0 END) +
+    (CASE WHEN (
+        image_intelligence_records.source IS NULL OR image_intelligence_records.source <> 'metadata_placeholder'
+    ) AND COALESCE(image_intelligence_records.ocr_text, COALESCE(images.ocr_text, '')) LIKE ? THEN 30 ELSE 0 END) +
     (CASE WHEN EXISTS (
         SELECT 1 FROM image_tag it
         INNER JOIN tags t ON t.id = it.tag_id
@@ -164,7 +166,17 @@ SQL;
                     ->whereColumn('iit.image_id', 'images.id')
                     ->where('iit.normalized_term', 'like', $normalizedLike);
             })
-            ->orWhereRaw('COALESCE(image_intelligence_records.ocr_text, COALESCE(images.ocr_text, ?)) LIKE ?', ['', $like])
+            ->orWhere(function (Builder $ocr) use ($like) {
+                $ocr->where(function (Builder $query) use ($like) {
+                    $query->where(function (Builder $source) {
+                        $source->whereNull('image_intelligence_records.source')
+                            ->orWhere('image_intelligence_records.source', '!=', 'metadata_placeholder');
+                    })->whereRaw('COALESCE(image_intelligence_records.ocr_text, ?) LIKE ?', ['', $like]);
+                })->orWhere(function (Builder $legacy) use ($like) {
+                    $legacy->whereNull('image_intelligence_records.id')
+                        ->whereRaw('COALESCE(images.ocr_text, ?) LIKE ?', ['', $like]);
+                });
+            })
             ->orWhereExists(function ($exists) use ($query) {
                 $exists->selectRaw('1')
                     ->from('image_tag as it')

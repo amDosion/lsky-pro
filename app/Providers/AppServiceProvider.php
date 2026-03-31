@@ -42,6 +42,19 @@ class AppServiceProvider extends ServiceProvider
         // Bind custom Sanctum PAT model to support per-token expiry and IP whitelist
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
+        // Keep test bootstrap deterministic and avoid install-state probing during
+        // RefreshDatabase / artisan test lifecycle.
+        $isTestingBootstrap = (string) ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '') === 'testing';
+
+        if ($isTestingBootstrap) {
+            View::share([
+                '_group' => $this->makeFallbackSharedGroup(),
+                '_is_notice' => '',
+            ]);
+
+            return;
+        }
+
         // 是否需要生成 env 文件
         if (! file_exists(base_path('.env'))) {
             file_put_contents(base_path('.env'), file_get_contents(base_path('.env.example')));

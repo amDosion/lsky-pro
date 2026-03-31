@@ -13,6 +13,10 @@
         'team-permissions' => ['title' => '团队权限', 'icon' => 'fa-users-cog'],
     ];
 
+    if (! auth()->user()?->is_adminer) {
+        unset($menus['performance'], $menus['reviews'], $menus['jobs']);
+    }
+
     $isOverview = request()->routeIs('advanced');
 @endphp
 

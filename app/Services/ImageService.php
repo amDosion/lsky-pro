@@ -293,7 +293,7 @@ class ImageService
                 if ($configs->get(GroupConfigKey::ScannedAction) === 'delete') {
                     // 违规且策略为删除：直接清理物理文件并拒绝
                     if (is_null($existing)) {
-                        try { $filesystem->delete($pathname); } catch (\Throwable $e) {}
+                        $this->cleanupRejectedUpload($filesystem, $pathname);
                     }
                     throw new UploadException('图片涉嫌违规，禁止上传。');
                 } else {
@@ -337,6 +337,15 @@ class ImageService
         $this->dispatchImageIntelligence($image);
 
         return $image;
+    }
+
+    protected function cleanupRejectedUpload(Filesystem $filesystem, string $pathname): void
+    {
+        try {
+            $filesystem->delete($pathname);
+        } catch (\Throwable $e) {
+            Utils::e($e, '拒绝违规上传时删除源文件失败');
+        }
     }
 
     private function dispatchImageIntelligence(Image $image): void

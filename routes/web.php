@@ -23,7 +23,6 @@ use App\Http\Controllers\Api\V1\AiConfigController as ApiAiConfigController;
 use App\Http\Controllers\Api\V1\AiPromptTaskController as ApiAiPromptTaskController;
 use App\Http\Controllers\Api\V1\ImageController as ApiImageController;
 use App\Http\Controllers\Api\V1\IntelligenceController as ApiIntelligenceController;
-use App\Http\Controllers\Api\V1\IntelligenceJobController as ApiIntelligenceJobController;
 use App\Http\Controllers\Api\V1\PerformanceController as ApiPerformanceController;
 use App\Http\Controllers\Api\V1\ProcessingController as ApiProcessingController;
 use App\Http\Controllers\Api\V1\ProcessTemplateController as ApiProcessTemplateController;
@@ -106,15 +105,6 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('intelligence/backfill-dispatch', [ApiIntelligenceController::class, 'dispatchBackfill'])
             ->middleware('throttle:5,1')
             ->name('intelligence.backfill.dispatch');
-        Route::get('intelligence/job-status', [ApiIntelligenceJobController::class, 'status'])->name('intelligence.job.status');
-        Route::post('intelligence/job-start', [ApiIntelligenceJobController::class, 'start'])->name('intelligence.job.start');
-        Route::post('intelligence/job-pause', [ApiIntelligenceJobController::class, 'pause'])->name('intelligence.job.pause');
-        Route::post('intelligence/job-resume', [ApiIntelligenceJobController::class, 'resume'])->name('intelligence.job.resume');
-        Route::post('intelligence/job-stop', [ApiIntelligenceJobController::class, 'stop'])->name('intelligence.job.stop');
-        Route::post('intelligence/job-clear', [ApiIntelligenceJobController::class, 'clear'])->name('intelligence.job.clear');
-        Route::get('intelligence/job-logs', [ApiIntelligenceJobController::class, 'logs'])->name('intelligence.job.logs');
-        Route::get('intelligence/job-schedule', [ApiIntelligenceJobController::class, 'scheduleGet'])->name('intelligence.job.schedule.get');
-        Route::post('intelligence/job-schedule', [ApiIntelligenceJobController::class, 'scheduleSet'])->name('intelligence.job.schedule.set');
         Route::get('system/performance', [ApiPerformanceController::class, 'summary'])->name('system.performance');
         Route::get('processing/drivers/status', [ApiProcessingController::class, 'status'])->name('processing.status');
 

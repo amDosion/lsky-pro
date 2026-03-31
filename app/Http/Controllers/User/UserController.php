@@ -145,6 +145,10 @@ class UserController extends Controller
             return view('user.advanced_pages.performance', $this->performancePayload());
         }
 
+        if ($feature === 'jobs') {
+            abort_unless((bool) ($user->is_adminer ?? false), 403);
+        }
+
         return view('user.advanced_pages.'.$feature);
     }
 
@@ -205,13 +209,13 @@ class UserController extends Controller
             'ai-prompt' => 'AI 提示词',
             'ai-config' => 'AI 配置',
             'drivers' => '处理驱动',
-            'reviews' => '审核中心',
-            'jobs' => '作业中心',
             'team-permissions' => '团队权限',
         ];
 
         if ($user->is_adminer) {
             $pages['performance'] = '系统性能';
+            $pages['reviews'] = '审核中心';
+            $pages['jobs'] = '作业中心';
         }
 
         return compact('user', 'tableExists', 'features', 'overview', 'pages', 'aiConfigReady', 'activeAiProvider', 'intelligence', 'intelligenceControl');

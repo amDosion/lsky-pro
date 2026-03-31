@@ -34,6 +34,21 @@
         </style>
 
         <section class="ai-config-wrapper" id="ai-config-app">
+            <section class="ai-config-panel">
+                <div class="ai-config-panel-head">
+                    <div>
+                        <div class="ai-config-panel-title">能力边界</div>
+                        <div class="ai-config-panel-sub">避免把当前页误解成 intelligence 主引擎切换器。</div>
+                    </div>
+                </div>
+                <div class="ai-config-panel-body">
+                    <div class="adv-toolbar-sub">
+                        当前页只影响 AI 提示词与多模态能力配置，不会切换当前图片 intelligence 的主写入链路。
+                        现阶段图片 intelligence 写侧仍以本地分析链路为主，远端 provider 配置主要用于 AI prompt / multimodal 能力。
+                    </div>
+                </div>
+            </section>
+
             <div class="ai-config-selector-row">
                 <label class="adv-field">
                     <span>编辑提供商</span>

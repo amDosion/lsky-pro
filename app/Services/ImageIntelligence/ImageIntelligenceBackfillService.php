@@ -82,7 +82,7 @@ class ImageIntelligenceBackfillService
                 &$samples,
                 &$stop
             ) {
-                $images->loadMissing('intelligenceRecord:id,image_id,status,analyzed_at,updated_at');
+                $images->loadMissing('intelligenceRecord:id,image_id,status,source,analyzed_at,updated_at');
 
                 /** @var Image $image */
                 foreach ($images as $image) {
@@ -199,6 +199,7 @@ class ImageIntelligenceBackfillService
                         $incomplete->whereNotNull('intelligence_records.id')
                             ->where(function (Builder $needsRetry) {
                                 $needsRetry->whereNull('intelligence_records.analyzed_at')
+                                    ->orWhere('intelligence_records.source', '=', 'metadata_placeholder')
                                     ->orWhere('intelligence_records.status', '!=', 'ready');
                             });
 
@@ -224,6 +225,10 @@ class ImageIntelligenceBackfillService
 
         if ($record->analyzed_at === null) {
             return 'missing_analyzed_at';
+        }
+
+        if (trim((string) $record->source) === 'metadata_placeholder') {
+            return 'placeholder_record';
         }
 
         $status = trim((string) $record->status);

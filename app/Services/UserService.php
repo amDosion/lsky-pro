@@ -30,23 +30,50 @@ class UserService
         })->whereIn($field, $keys);
 
         DB::transaction(function () use ($model, $useRecycleBin, &$count) {
+            $affectedUserIds = [];
+            $albumDeleteCounts = [];
+
             /** @var Image $image */
             foreach ($model->cursor() as $image) {
-                // 相册图片数量更新
-                $image->album?->decrement('image_num');
-                // 更新相册图片数量
+                if ($image->user_id) {
+                    $affectedUserIds[(int) $image->user_id] = true;
+                }
+
+                if ($image->album_id) {
+                    $albumDeleteCounts[(int) $image->album_id] = ($albumDeleteCounts[(int) $image->album_id] ?? 0) + 1;
+                }
+
                 if ($useRecycleBin) {
                     $image->delete();
                 } else {
                     $image->forceDelete();
                 }
-                // 更新数量
-                if ($image->user) {
-                    $image->user->image_num = $image->user->images()->count();
-                    $image->user->save();
-                }
 
                 $count++;
+            }
+
+            foreach ($albumDeleteCounts as $albumId => $deletedCount) {
+                DB::table('albums')
+                    ->where('id', $albumId)
+                    ->decrement('image_num', $deletedCount);
+            }
+
+            if ($affectedUserIds === []) {
+                return;
+            }
+
+            $remainingCounts = Image::query()
+                ->selectRaw('user_id, COUNT(*) as aggregate')
+                ->whereIn('user_id', array_keys($affectedUserIds))
+                ->groupBy('user_id')
+                ->pluck('aggregate', 'user_id');
+
+            foreach (array_keys($affectedUserIds) as $userId) {
+                DB::table('users')
+                    ->where('id', $userId)
+                    ->update([
+                        'image_num' => (int) ($remainingCounts[$userId] ?? 0),
+                    ]);
             }
         });
 

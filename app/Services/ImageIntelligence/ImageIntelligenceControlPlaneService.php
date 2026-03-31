@@ -40,6 +40,10 @@ class ImageIntelligenceControlPlaneService
                 ->join('image_intelligence_records as intelligence_records', 'intelligence_records.image_id', '=', 'images.id')
                 ->where('images.user_id', $user->id)
                 ->where('intelligence_records.status', 'ready')
+                ->where(function ($query) {
+                    $query->whereNull('intelligence_records.source')
+                        ->orWhere('intelligence_records.source', '!=', 'metadata_placeholder');
+                })
                 ->whereNotNull('intelligence_records.analyzed_at')
                 ->count();
 
@@ -54,6 +58,7 @@ class ImageIntelligenceControlPlaneService
                 ->where('images.user_id', $user->id)
                 ->where(function ($query) {
                     $query->whereNull('intelligence_records.analyzed_at')
+                        ->orWhere('intelligence_records.source', '=', 'metadata_placeholder')
                         ->orWhere('intelligence_records.status', '!=', 'ready');
                 })
                 ->count();
@@ -61,6 +66,10 @@ class ImageIntelligenceControlPlaneService
             $latestAnalyzedAt = DB::table('images')
                 ->join('image_intelligence_records as intelligence_records', 'intelligence_records.image_id', '=', 'images.id')
                 ->where('images.user_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNull('intelligence_records.source')
+                        ->orWhere('intelligence_records.source', '!=', 'metadata_placeholder');
+                })
                 ->max('intelligence_records.analyzed_at');
         }
 
@@ -153,6 +162,10 @@ class ImageIntelligenceControlPlaneService
             $analyzedCount = DB::table('images')
                 ->join('image_intelligence_records as intelligence_records', 'intelligence_records.image_id', '=', 'images.id')
                 ->where('intelligence_records.status', 'ready')
+                ->where(function ($query) {
+                    $query->whereNull('intelligence_records.source')
+                        ->orWhere('intelligence_records.source', '!=', 'metadata_placeholder');
+                })
                 ->whereNotNull('intelligence_records.analyzed_at')
                 ->count();
 
@@ -165,12 +178,17 @@ class ImageIntelligenceControlPlaneService
                 ->join('image_intelligence_records as intelligence_records', 'intelligence_records.image_id', '=', 'images.id')
                 ->where(function ($query) {
                     $query->whereNull('intelligence_records.analyzed_at')
+                        ->orWhere('intelligence_records.source', '=', 'metadata_placeholder')
                         ->orWhere('intelligence_records.status', '!=', 'ready');
                 })
                 ->count();
 
             $latestAnalyzedAt = DB::table('images')
                 ->join('image_intelligence_records as intelligence_records', 'intelligence_records.image_id', '=', 'images.id')
+                ->where(function ($query) {
+                    $query->whereNull('intelligence_records.source')
+                        ->orWhere('intelligence_records.source', '!=', 'metadata_placeholder');
+                })
                 ->max('intelligence_records.analyzed_at');
         }
 

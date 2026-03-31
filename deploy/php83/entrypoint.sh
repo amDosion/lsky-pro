@@ -22,8 +22,8 @@ git config --global --add safe.directory /var/www/html >/dev/null 2>&1 || true
 if [ -f composer.json ]; then
   if [ ! -d vendor ] || [ composer.lock -nt vendor/autoload.php ] 2>/dev/null; then
     echo "[entrypoint] Installing composer dependencies..."
-    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>&1 || true
-    composer dump-autoload --no-dev --optimize --no-scripts 2>&1 || true
+    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts 2>&1
+    composer dump-autoload --no-dev --optimize --no-scripts 2>&1
     echo "[entrypoint] Composer dependencies installed."
   fi
 fi
@@ -61,14 +61,14 @@ if [ -f artisan ]; then
     cp .env.example .env
   fi
   if [ -f .env ] && ! grep -Eq '^APP_KEY=base64:[A-Za-z0-9+/=]+' .env; then
-    php artisan key:generate --force --no-interaction >/dev/null 2>&1 || true
+    php artisan key:generate --force --no-interaction >/dev/null 2>&1
   fi
-  php artisan package:discover --ansi >/dev/null 2>&1 || true
-  php artisan storage:link >/dev/null 2>&1 || true
-  php artisan migrate --force --no-interaction >/dev/null 2>&1 || true
-  php artisan config:cache >/dev/null 2>&1 || true
-  php artisan view:cache >/dev/null 2>&1 || true
-  php artisan route:cache >/dev/null 2>&1 || true
+  php artisan package:discover --ansi >/dev/null 2>&1
+  php artisan storage:link >/dev/null 2>&1
+  php artisan migrate --force --no-interaction >/dev/null 2>&1
+  php artisan config:cache >/dev/null 2>&1
+  php artisan view:cache >/dev/null 2>&1
+  php artisan route:cache >/dev/null 2>&1
 
   if [ "${INIT_AUTO_BOOTSTRAP:-false}" = "true" ]; then
     php artisan lsky:bootstrap
