@@ -3,6 +3,17 @@ set -euo pipefail
 
 cd /var/www/html
 
+ROLE="${CONTAINER_ROLE:-web}"
+QUEUE_CONNECTION_NAME="${LARAVEL_QUEUE_CONNECTION:-${QUEUE_CONNECTION:-redis}}"
+WORKER_QUEUES="${LARAVEL_WORKER_QUEUES:-upload-critical,default,ai-prompt,image-process,webhook-events,image-delete}"
+WORKER_SLEEP="${LARAVEL_WORKER_SLEEP:-3}"
+WORKER_TRIES="${LARAVEL_WORKER_TRIES:-3}"
+WORKER_MAX_TIME="${LARAVEL_WORKER_MAX_TIME:-3600}"
+WORKER_TIMEOUT="${LARAVEL_WORKER_TIMEOUT:-180}"
+SCHEDULE_INTERVAL="${LARAVEL_SCHEDULE_INTERVAL:-60}"
+
+git config --global --add safe.directory /var/www/html >/dev/null 2>&1 || true
+
 # ============================================================
 # 自动安装/更新依赖（容器重建后自动恢复）
 # ============================================================
@@ -59,9 +70,6 @@ if [ -f artisan ]; then
   php artisan view:cache >/dev/null 2>&1 || true
   php artisan route:cache >/dev/null 2>&1 || true
 
-  # 启动队列 worker（后台进程）
-  echo "[entrypoint] Starting queue worker..."
-  php artisan queue:work redis --queue=upload-critical,default --sleep=3 --tries=3 --max-time=3600 &
   if [ "${INIT_AUTO_BOOTSTRAP:-false}" = "true" ]; then
     php artisan lsky:bootstrap
   fi
@@ -78,5 +86,33 @@ if [ -f installed.lock ] && [ -w installed.lock ]; then
 fi
 
 chown -R www-data:www-data storage bootstrap/cache public/uploads || true
+
+if [ -f artisan ]; then
+  case "$ROLE" in
+    worker)
+      echo "[entrypoint] Starting queue worker..."
+      exec php artisan queue:work "$QUEUE_CONNECTION_NAME" \
+        --queue="$WORKER_QUEUES" \
+        --sleep="$WORKER_SLEEP" \
+        --tries="$WORKER_TRIES" \
+        --max-time="$WORKER_MAX_TIME" \
+        --timeout="$WORKER_TIMEOUT"
+      ;;
+    scheduler)
+      echo "[entrypoint] Starting scheduler loop..."
+      while true; do
+        if ! php artisan schedule:run --no-interaction; then
+          echo "[entrypoint] schedule:run failed, retrying after ${SCHEDULE_INTERVAL}s"
+        fi
+        sleep "$SCHEDULE_INTERVAL"
+      done
+      ;;
+    web)
+      ;;
+    *)
+      echo "[entrypoint] Unknown CONTAINER_ROLE=$ROLE, falling back to provided command."
+      ;;
+  esac
+fi
 
 exec "$@"

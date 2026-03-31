@@ -6,14 +6,18 @@ services:
     image: lsky-pro-custom:latest
     container_name: ${PANEL_APP_NAME:-lsky-pro}
     restart: unless-stopped
+    entrypoint: ["/bin/bash", "/var/www/html/deploy/php83/entrypoint.sh"]
+    command: ["apache2-foreground"]
     ports:
       - "${PANEL_APP_PORT_HTTP:-8089}:80"
     env_file:
       - ../../.env
     environment:
+      CONTAINER_ROLE: web
       APP_ENV: ${APP_ENV:-prod}
       APP_DEBUG: ${APP_DEBUG:-false}
       INIT_AUTO_BOOTSTRAP: ${INIT_AUTO_BOOTSTRAP:-false}
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
       PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
       PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-128M}
       PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-128M}
@@ -28,6 +32,53 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - default
+      - 1panel-network
+
+  worker:
+    image: lsky-pro-custom:latest
+    container_name: ${PANEL_APP_NAME:-lsky-pro}-worker
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/var/www/html/deploy/php83/entrypoint.sh"]
+    env_file:
+      - ../../.env
+    environment:
+      CONTAINER_ROLE: worker
+      APP_ENV: ${APP_ENV:-prod}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+      LARAVEL_WORKER_QUEUES: ${LARAVEL_WORKER_QUEUES:-upload-critical,default,ai-prompt,image-process,webhook-events,image-delete}
+      LARAVEL_QUEUE_CONNECTION: ${LARAVEL_QUEUE_CONNECTION:-${QUEUE_CONNECTION:-redis}}
+    volumes:
+      - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
+    depends_on:
+      - lsky-pro
+    networks:
+      - default
+      - 1panel-network
+
+  scheduler:
+    image: lsky-pro-custom:latest
+    container_name: ${PANEL_APP_NAME:-lsky-pro}-scheduler
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/var/www/html/deploy/php83/entrypoint.sh"]
+    env_file:
+      - ../../.env
+    environment:
+      CONTAINER_ROLE: scheduler
+      APP_ENV: ${APP_ENV:-prod}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+      LARAVEL_SCHEDULE_INTERVAL: ${LARAVEL_SCHEDULE_INTERVAL:-60}
+    volumes:
+      - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
+    depends_on:
+      - lsky-pro
     networks:
       - default
       - 1panel-network

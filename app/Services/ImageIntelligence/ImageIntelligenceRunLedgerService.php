@@ -173,6 +173,33 @@ class ImageIntelligenceRunLedgerService
         });
     }
 
+    public function recordJobSkipped(?int $runId, int $imageId, ?string $reason = null): void
+    {
+        if (! $runId) {
+            return;
+        }
+
+        DB::transaction(function () use ($runId, $imageId, $reason) {
+            /** @var ImageIntelligenceRun|null $run */
+            $run = ImageIntelligenceRun::query()
+                ->lockForUpdate()
+                ->find($runId);
+
+            if (! $run) {
+                return;
+            }
+
+            $run->status = in_array($run->status, ['queued', 'processing'], true) ? 'processing' : $run->status;
+            $run->skipped = max((int) $run->skipped, 0) + 1;
+            $run->last_image_id = $imageId;
+            if ($reason) {
+                $run->error_message = $this->normalizeError($reason);
+            }
+            $this->finalizeIfTerminal($run);
+            $run->save();
+        });
+    }
+
     public function latestRunSummary(): ?array
     {
         /** @var ImageIntelligenceRun|null $run */
@@ -255,7 +282,9 @@ class ImageIntelligenceRunLedgerService
             return;
         }
 
-        $settled = max((int) $run->succeeded, 0) + max((int) $run->failed, 0);
+        $settled = max((int) $run->succeeded, 0)
+            + max((int) $run->failed, 0)
+            + max((int) $run->skipped, 0);
         if ($settled < max((int) $run->dispatched, 0)) {
             return;
         }

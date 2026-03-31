@@ -5,6 +5,7 @@ namespace App\Services\ImageIntelligence;
 use App\Jobs\AnalyzeImageIntelligenceJob;
 use App\Models\Image;
 use App\Models\ImageIntelligenceRecord;
+use App\Models\ImageIntelligenceTerm;
 use App\Services\ImageIntelligence\ProviderBackedImageIntelligenceAnalyzer;
 use App\Services\ImageIntelligence\LocalImageIntelligenceAnalyzer;
 use Illuminate\Support\Str;
@@ -90,6 +91,17 @@ class ImageIntelligenceService
     public function releaseDispatchLock(int $imageId): void
     {
         Cache::forget($this->dispatchLockKey($imageId));
+    }
+
+    public function cleanupMissingImageArtifacts(int $imageId): void
+    {
+        ImageIntelligenceTerm::query()
+            ->where('image_id', $imageId)
+            ->delete();
+
+        ImageIntelligenceRecord::query()
+            ->where('image_id', $imageId)
+            ->delete();
     }
 
     /**

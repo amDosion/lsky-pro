@@ -8,9 +8,10 @@
 #   docker compose -f deploy/1panel/docker-compose.full.yml up -d
 #
 # 服务概览:
-#   web    - 主应用 (Apache + PHP 8.3)，处理 HTTP 请求
-#   worker - 队列消费者，后台异步处理上传、AI分析、webhook 等任务
-#   redis  - 缓存/会话/队列后端，开启 AOF 持久化
+#   web       - 主应用 (Apache + PHP 8.3)，处理 HTTP 请求
+#   worker    - 队列消费者，后台异步处理上传、AI 分析、webhook 等任务
+#   scheduler - Laravel 调度器，驱动定时清理和 intelligence 回填
+#   redis     - 缓存/会话/队列后端，开启 AOF 持久化
 # =============================================================================
 
 services:
@@ -20,7 +21,7 @@ services:
   # ---------------------------------------------------------------------------
   # 作用: 运行 Apache + PHP-FPM，接收并响应所有 HTTP 请求。
   # 包含 Laravel 前端路由、API 接口、管理后台。
-  # 依赖 redis 提供缓存/会话存储，依赖 worker 处理异步队列任务。
+  # 依赖 redis 提供缓存/会话存储。
   # ---------------------------------------------------------------------------
   web:
     build:
@@ -29,14 +30,18 @@ services:
     image: lsky-pro-custom:latest
     container_name: lsky-pro
     restart: unless-stopped
+    entrypoint: [/bin/bash, /var/www/html/deploy/php83/entrypoint.sh]
+    command: [apache2-foreground]
     ports:
       - 8089:80
     env_file:
       - ../../.env
     environment:
+      CONTAINER_ROLE: web
       APP_ENV: prod
       APP_DEBUG: false
       INIT_AUTO_BOOTSTRAP: false
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
       PHP_MEMORY_LIMIT: 512M
       PHP_UPLOAD_MAX_FILESIZE: 128M
       PHP_POST_MAX_SIZE: 128M
@@ -58,8 +63,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      worker:
-        condition: service_started
     networks:
       - lsky-network
       - 1panel-network
@@ -69,8 +72,9 @@ services:
   # ---------------------------------------------------------------------------
   # 作用: 运行 Laravel Queue Worker，持续消费 Redis 队列中的异步任务。
   # 处理的任务包括:
-  #   - upload-critical: 上传后的关键处理（缩略图生成、格式转换等）
-  #   - default: 默认队列（AI 图像分析、webhook 回调、邮件通知等）
+  #   - upload-critical: 上传后的关键处理与 intelligence 分析
+  #   - default: 默认队列
+  #   - ai-prompt / image-process / webhook-events / image-delete
   # 使用与 web 相同的镜像和代码卷，确保代码一致性。
   # 不对外暴露端口，仅通过 Redis 与 web 服务通信。
   # ---------------------------------------------------------------------------
@@ -78,23 +82,49 @@ services:
     image: lsky-pro-custom:latest
     container_name: lsky-pro-worker
     restart: unless-stopped
-    entrypoint: [/usr/local/bin/lsky-entrypoint]
-    command:
-      - php
-      - artisan
-      - queue:work
-      - redis
-      - --queue=upload-critical,default
-      - --sleep=3
-      - --tries=3
-      - --max-time=3600
+    entrypoint: [/bin/bash, /var/www/html/deploy/php83/entrypoint.sh]
     env_file:
       - ../../.env
     environment:
+      CONTAINER_ROLE: worker
       APP_ENV: prod
       APP_DEBUG: false
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
       PHP_MEMORY_LIMIT: 512M
       HF_HOME: /opt/models/huggingface
+      LARAVEL_WORKER_QUEUES: upload-critical,default,ai-prompt,image-process,webhook-events,image-delete
+      LARAVEL_QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 6J2I2QTogajqyrgbw6%i
+    volumes:
+      - ../..:/var/www/html
+      - ../../models:/opt/models/huggingface
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - lsky-network
+      - 1panel-network
+
+  # ---------------------------------------------------------------------------
+  # scheduler: Laravel 定时任务执行器
+  # ---------------------------------------------------------------------------
+  scheduler:
+    image: lsky-pro-custom:latest
+    container_name: lsky-pro-scheduler
+    restart: unless-stopped
+    entrypoint: [/bin/bash, /var/www/html/deploy/php83/entrypoint.sh]
+    env_file:
+      - ../../.env
+    environment:
+      CONTAINER_ROLE: scheduler
+      APP_ENV: prod
+      APP_DEBUG: false
+      UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
+      PHP_MEMORY_LIMIT: 512M
+      HF_HOME: /opt/models/huggingface
+      LARAVEL_SCHEDULE_INTERVAL: 60
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: 6J2I2QTogajqyrgbw6%i

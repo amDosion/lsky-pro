@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 PHP_BIN="${PHP_BIN:-php}"
-REQUIRED_PHP="8.0.2"
+REQUIRED_PHP="8.1.0"
 
 version_ge() {
   [ "$1" = "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" ]

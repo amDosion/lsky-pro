@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Image;
 use App\Services\ImageIntelligence\ImageIntelligenceService;
 use App\Utils;
 use Illuminate\Bus\Queueable;
@@ -31,11 +32,21 @@ class AnalyzeImageIntelligenceJob implements ShouldQueue
     ): void
     {
         try {
+            if (! Image::query()->whereKey($this->imageId)->exists()) {
+                $service->cleanupMissingImageArtifacts($this->imageId);
+                $runLedger->recordJobSkipped($this->runId, $this->imageId, '图片不存在或已删除，跳过 intelligence 分析');
+
+                return;
+            }
+
             $runLedger->markJobProcessing($this->runId, $this->imageId);
             $service->markProcessing($this->imageId);
             $record = $service->analyzeAndStore($this->imageId);
             if (! $record) {
-                throw new \RuntimeException('图片不存在或已删除，无法完成 intelligence 分析');
+                $service->cleanupMissingImageArtifacts($this->imageId);
+                $runLedger->recordJobSkipped($this->runId, $this->imageId, '图片不存在或已删除，跳过 intelligence 分析');
+
+                return;
             }
 
             $runLedger->recordJobSucceeded($this->runId, $this->imageId);

@@ -216,10 +216,5 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin']], function () 
     Route::get('share-users', [AlbumShareController::class, 'users'])->name('admin.share.users');
 });
 
-// Vite test route (no auth required)
-Route::get("/vite-test", function () {
-    return view("vite-test");
-});
-
 require __DIR__.'/image.php';
 require __DIR__.'/auth.php';

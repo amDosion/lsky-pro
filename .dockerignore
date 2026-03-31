@@ -11,6 +11,7 @@ vendor
 storage
 bootstrap/cache
 public/uploads
+models
 database/*.sqlite
 composer-setup.php
 docs
@@ -18,4 +19,3 @@ prompts
 tests
 coverage
 tmp
-
