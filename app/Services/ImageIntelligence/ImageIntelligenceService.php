@@ -109,12 +109,30 @@ class ImageIntelligenceService
      */
     private function buildPayload(Image $image): array
     {
-        // Default: use local intelligence (MobileNetV2 + Tesseract OCR)
+        // Prefer local intelligence; fall back to the configured multimodal provider
+        // before degrading to a metadata placeholder.
         try {
             return $this->localAnalyzer->analyze($image);
-        } catch (\Throwable $e) {
-            // Local analysis failed, fall back to placeholder
-            return $this->buildPlaceholderPayload($image, 'local_analysis_failed: ' . $e->getMessage());
+        } catch (\Throwable $localError) {
+            try {
+                $payload = $this->providerBackedAnalyzer->analyze($image);
+                $metadata = is_array($payload['metadata'] ?? null) ? $payload['metadata'] : [];
+                $payload['metadata'] = array_merge($metadata, [
+                    'local_fallback' => true,
+                    'local_failure_reason' => $localError->getMessage(),
+                ]);
+
+                return $payload;
+            } catch (\Throwable $providerError) {
+                return $this->buildPlaceholderPayload(
+                    $image,
+                    sprintf(
+                        'local_analysis_failed: %s; provider_analysis_failed: %s',
+                        $localError->getMessage(),
+                        $providerError->getMessage()
+                    )
+                );
+            }
         }
     }
 

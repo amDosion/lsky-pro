@@ -64,6 +64,35 @@ fi
 "$PHP_BIN" artisan --version >/dev/null
 echo "[OK] artisan bootstrap successful"
 
+LOCAL_SCRIPT="$ROOT_DIR/scripts/image_intelligence/classify_ocr.py"
+if [ ! -f "$LOCAL_SCRIPT" ]; then
+  echo "[FAIL] local image intelligence script missing: $LOCAL_SCRIPT"
+  exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[FAIL] python3 not found for local image intelligence"
+  exit 1
+fi
+
+if ! command -v tesseract >/dev/null 2>&1; then
+  echo "[FAIL] tesseract not found for local image intelligence"
+  exit 1
+fi
+
+python3 - <<'PY'
+import importlib.util
+import sys
+
+required = ["torch", "transformers", "PIL", "pytesseract"]
+missing = [name for name in required if importlib.util.find_spec(name) is None]
+if missing:
+    print("[FAIL] missing local image intelligence Python packages: " + " ".join(missing))
+    sys.exit(1)
+PY
+
+echo "[OK] local image intelligence runtime present"
+
 AUTO_BOOTSTRAP="${INIT_AUTO_BOOTSTRAP:-false}"
 if [[ "$AUTO_BOOTSTRAP" == "true" ]]; then
   echo "[INFO] auto bootstrap is handled by entrypoint; health check remains read-only"

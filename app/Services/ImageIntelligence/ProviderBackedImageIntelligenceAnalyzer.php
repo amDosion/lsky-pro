@@ -9,7 +9,8 @@ use League\Flysystem\FilesystemException;
 class ProviderBackedImageIntelligenceAnalyzer
 {
     public function __construct(
-        private readonly AiMultimodalContentService $multimodalService
+        private readonly AiMultimodalContentService $multimodalService,
+        private readonly ImageDataUriPayloadService $payloadService
     ) {
     }
 
@@ -97,7 +98,7 @@ class ProviderBackedImageIntelligenceAnalyzer
             throw new \RuntimeException('图片内容为空，无法执行 AI 图像分析');
         }
 
-        return [$mimeType, base64_encode($contents)];
+        return $this->payloadService->prepare($mimeType, $contents);
     }
 
     private function buildInstruction(Image $image): string

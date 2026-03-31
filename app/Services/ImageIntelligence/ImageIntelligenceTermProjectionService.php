@@ -10,15 +10,15 @@ class ImageIntelligenceTermProjectionService
 {
     public function syncForImage(Image $image, ImageIntelligenceRecord $record): void
     {
+        ImageIntelligenceTerm::query()
+            ->where('image_id', $image->id)
+            ->delete();
+
         if (! $this->isProjectableStatus($record)) {
             return;
         }
 
         $terms = $this->projectTerms($record);
-
-        ImageIntelligenceTerm::query()
-            ->where('image_id', $image->id)
-            ->delete();
 
         if ($terms === []) {
             return;
@@ -115,6 +115,11 @@ class ImageIntelligenceTermProjectionService
     private function isProjectableStatus(ImageIntelligenceRecord $record): bool
     {
         $status = strtolower(trim((string) $record->status));
+        $source = strtolower(trim((string) $record->source));
+
+        if ($source === 'metadata_placeholder') {
+            return false;
+        }
 
         return $status === '' || in_array($status, ['ready', 'success', 'completed'], true);
     }

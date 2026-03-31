@@ -16,7 +16,7 @@ class AiConfigContractTest extends TestCase
         Cache::forget('configs');
     }
 
-    public function test_ai_config_page_explains_that_it_does_not_switch_intelligence_write_side(): void
+    public function test_ai_config_page_explains_local_first_with_provider_fallback_boundary(): void
     {
         $user = $this->createTestUser();
 
@@ -24,6 +24,7 @@ class AiConfigContractTest extends TestCase
             ->get('/advanced/ai-config')
             ->assertOk()
             ->assertSee('当前页只影响 AI 提示词与多模态能力配置')
-            ->assertSee('不会切换当前图片 intelligence 的主写入链路');
+            ->assertSee('系统优先使用本地分析链路')
+            ->assertSee('本地分析不可用时可使用已配置的多模态 provider 作为降级补位');
     }
 }

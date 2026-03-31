@@ -43,8 +43,8 @@
                 </div>
                 <div class="ai-config-panel-body">
                     <div class="adv-toolbar-sub">
-                        当前页只影响 AI 提示词与多模态能力配置，不会切换当前图片 intelligence 的主写入链路。
-                        现阶段图片 intelligence 写侧仍以本地分析链路为主，远端 provider 配置主要用于 AI prompt / multimodal 能力。
+                        当前页只影响 AI 提示词与多模态能力配置，不会手动切换当前图片 intelligence 的主写入策略。
+                        系统优先使用本地分析链路；本地分析不可用时可使用已配置的多模态 provider 作为降级补位。
                     </div>
                 </div>
             </section>

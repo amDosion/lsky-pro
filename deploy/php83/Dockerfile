@@ -9,6 +9,13 @@ RUN set -eux; \
         ca-certificates \
         curl \
         git \
+        python3 \
+        python3-pip \
+        python3-pil \
+        python3-torch \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-chi-sim \
         unzip \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
@@ -55,6 +62,7 @@ RUN set -eux; \
     && docker-php-ext-enable redis \
     && pecl install imagick \
     && docker-php-ext-enable imagick \
+    && tesseract --version >/dev/null \
     && php -m | grep -qx 'pdo_pgsql' \
     && php -m | grep -qx 'pgsql' \
     && printf 'ServerName localhost\n' > /etc/apache2/conf-available/servername.conf \
@@ -63,6 +71,18 @@ RUN set -eux; \
     && sed -i "s|rights=\"none\" pattern=\"PDF\"|rights=\"read\" pattern=\"PDF\"|" /etc/ImageMagick-6/policy.xml \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 
+RUN set -eux; \
+    pip3 install --no-cache-dir --break-system-packages "transformers==4.26.1"; \
+    python3 - <<'PY'
+import torch
+from PIL import Image
+from transformers import BlipForConditionalGeneration, BlipProcessor
+print(torch.__version__)
+print(Image.__name__)
+print(BlipProcessor.__name__)
+print(BlipForConditionalGeneration.__name__)
+PY
+
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
@@ -70,6 +90,7 @@ WORKDIR /var/www/html
 COPY deploy/php83/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY deploy/php83/php.ini /usr/local/etc/php/conf.d/zz-lsky.ini
 COPY deploy/php83/entrypoint.sh /usr/local/bin/lsky-entrypoint
+COPY scripts/image_intelligence/requirements.txt /tmp/image-intelligence-requirements.txt
 
 COPY composer.json composer.lock ./
 RUN composer install \
@@ -78,6 +99,9 @@ RUN composer install \
     --prefer-dist \
     --optimize-autoloader \
     --no-scripts
+
+RUN python3 -m pip install --no-cache-dir --break-system-packages -r /tmp/image-intelligence-requirements.txt \
+    && rm -f /tmp/image-intelligence-requirements.txt
 
 COPY . .
 

@@ -6,7 +6,7 @@ use App\Models\Image;
 
 class LocalImageIntelligenceAnalyzer
 {
-    private const SCRIPT_PATH = '/opt/models/classify_ocr.py';
+    private const SCRIPT_RELATIVE_PATH = 'scripts/image_intelligence/classify_ocr.py';
     private const UPLOADS_ROOT = '/var/www/html/storage/app/uploads';
 
     /**
@@ -20,9 +20,15 @@ class LocalImageIntelligenceAnalyzer
             throw new \RuntimeException("图片文件不存在: {$filePath}");
         }
 
+        $scriptPath = base_path(self::SCRIPT_RELATIVE_PATH);
+
+        if (! file_exists($scriptPath)) {
+            throw new \RuntimeException('本地图像分析脚本不存在: '.$scriptPath);
+        }
+
         // Use proc_open for safe execution without shell interpolation
         $process = proc_open(
-            ['python3', self::SCRIPT_PATH, $filePath, '--top', '3'],
+            ['python3', $scriptPath, $filePath, '--top', '3'],
             [
                 0 => ['pipe', 'r'],
                 1 => ['pipe', 'w'],
@@ -38,10 +44,15 @@ class LocalImageIntelligenceAnalyzer
         fclose($pipes[0]);
         $output = stream_get_contents($pipes[1]);
         fclose($pipes[1]);
+        $errorOutput = trim((string) stream_get_contents($pipes[2]));
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
         if ($exitCode !== 0 || empty($output)) {
+            if ($errorOutput !== '') {
+                throw new \RuntimeException('本地图像分析脚本执行失败: '.mb_substr($errorOutput, 0, 300));
+            }
+
             throw new \RuntimeException('本地图像分析脚本未返回结果');
         }
 
