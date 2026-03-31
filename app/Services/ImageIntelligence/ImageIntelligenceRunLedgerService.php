@@ -200,13 +200,18 @@ class ImageIntelligenceRunLedgerService
         });
     }
 
-    public function latestRunSummary(): ?array
+    public function latestRunSummary(?string $triggerSource = null): ?array
     {
-        /** @var ImageIntelligenceRun|null $run */
-        $run = ImageIntelligenceRun::query()
+        $query = ImageIntelligenceRun::query()
             ->with('initiator:id,name,email')
-            ->latest('id')
-            ->first();
+            ->latest('id');
+
+        if ($triggerSource !== null && trim($triggerSource) !== '') {
+            $query->where('trigger_source', trim($triggerSource));
+        }
+
+        /** @var ImageIntelligenceRun|null $run */
+        $run = $query->first();
 
         return $this->summarize($run);
     }

@@ -988,6 +988,8 @@
             const batchDeletePreviewUrl = @json(route('advanced.api.images.batch-delete.preview'));
             const batchDeleteExecuteUrl = @json(route('advanced.api.images.batch-delete.execute'));
             const batchDeleteRollbackUrlTemplate = @json(route('advanced.api.images.batch-delete.rollback', ['batchId' => '__BATCH_ID__']));
+            const intelligenceDispatchUrl = @json(route('advanced.api.intelligence.backfill.dispatch'));
+            const canDispatchIntelligence = @json((bool) (Auth::user()?->is_adminer ?? false));
             let currentImageRecords = [];
             let imagesLoadError = '';
             let carouselItems = [];
@@ -1476,6 +1478,13 @@
                     ? detail.tags.map((tag) => String(tag?.name || '').trim()).filter(Boolean)
                     : [];
                 const detailOcr = String(detail?.ocr_text || '').trim();
+                const detailIntelligence = detail?.intelligence || {};
+                const detailIntelligenceLabels = Array.isArray(detailIntelligence?.labels)
+                    ? detailIntelligence.labels.map((label) => String(label || '').trim()).filter(Boolean)
+                    : [];
+                const detailIntelligenceStatus = String(detailIntelligence?.status || '').trim();
+                const detailIntelligenceFallback = Boolean(detailIntelligence?.fallback);
+                const detailIntelligenceFallbackReason = String(detailIntelligence?.fallback_reason || '').trim();
                 const displayName = String(detail?.filename || item.filename || '-').trim() || '-';
                 const originName = String(detail?.origin_name || '').trim();
                 const copyUrl = String(detail?.url || item.origin_url || item.url || '').trim();
@@ -1510,6 +1519,14 @@
                             {key: '审核人', value: detail?.reviewed_by ? `#${detail.reviewed_by}` : '-'},
                             {key: '标签', value: detailTags.length ? detailTags.join(' / ') : '-'},
                             {key: 'OCR摘要', value: detailOcr ? (detailOcr.length > 140 ? `${detailOcr.slice(0, 140)}...` : detailOcr) : '-'},
+                            {
+                                key: '识别状态',
+                                value: detailIntelligenceStatus
+                                    ? `${detailIntelligenceStatus}${detailIntelligenceFallback ? ' / 占位回退' : ''}`
+                                    : '-'
+                            },
+                            {key: 'AI标签', value: detailIntelligenceLabels.length ? detailIntelligenceLabels.join(' / ') : '-'},
+                            {key: '回退原因', value: detailIntelligenceFallbackReason || '-'},
                         ],
                     },
                 ];
@@ -1517,6 +1534,9 @@
                 const stateHtml = detail
                     ? ''
                     : `<div class="images-carousel-detail-state"><div class="images-carousel-detail-state-title">正在补充完整详情</div><div class="images-carousel-detail-state-meta">当前先展示列表中的轻量元数据，详细信息会在请求成功后自动补齐。</div></div>`;
+                const actionHtml = canDispatchIntelligence
+                    ? `<section class="images-carousel-detail-group"><div class="images-carousel-detail-group-title">识别操作</div><div class="images-carousel-detail-group-body"><div class="images-carousel-detail-state-meta">上传后会自动进入 intelligence 队列。这里可以对当前图片强制重跑本地识别，并继续走正式 worker/scheduler 链路。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;"><button type="button" class="images-carousel-detail-state-btn" data-action="single-intelligence-dispatch" data-image-id="${escapeHtml(String(item.id || ''))}">立即重识别</button><a class="images-carousel-detail-state-btn" href="{{ route('advanced.feature', ['feature' => 'jobs']) }}" style="text-decoration:none;">打开作业中心</a></div></div></section>`
+                    : '';
                 const html = stateHtml + groups.map((group) => {
                     const rowsHtml = group.rows.map((row) => {
                         const valueHtml = row.isHtml
@@ -1525,7 +1545,7 @@
                         return `<div class="images-carousel-detail-row"><dt class="images-carousel-detail-k">${escapeHtml(row.key)}</dt><dd class="images-carousel-detail-v">${valueHtml}</dd></div>`;
                     }).join('');
                     return `<section class="images-carousel-detail-group"><div class="images-carousel-detail-group-title">${escapeHtml(group.title)}</div><div class="images-carousel-detail-group-body">${rowsHtml}</div></section>`;
-                }).join('');
+                }).join('') + actionHtml;
                 $carouselDetail.html(html);
                 $carouselDetail.scrollTop(0);
             };
@@ -3378,6 +3398,45 @@
                 delete carouselDetailCache[item.id];
                 renderCarouselDetail(null);
                 fetchCarouselDetail(item.id);
+            }).on('click', '[data-action="single-intelligence-dispatch"]', async function () {
+                const item = getCurrentCarouselItem();
+                const imageId = Number($(this).data('image-id') || item?.id || 0);
+                if (!canDispatchIntelligence || !imageId) return;
+
+                const $button = $(this);
+                if ($button.prop('disabled')) return;
+                $button.prop('disabled', true).text('正在派发...');
+
+                try {
+                    const {data} = await axios.post(intelligenceDispatchUrl, {
+                        image_id: imageId,
+                        limit: 1,
+                        chunk: 1,
+                        older_than_minutes: 0,
+                        sample_limit: 1,
+                        force: true,
+                    }, {
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                        },
+                    });
+
+                    if (!data?.status) {
+                        throw new Error(data?.message || '派发失败');
+                    }
+
+                    toastr.success(`已派发当前图片重识别任务 #${imageId}`, null, {timeOut: 2600, extendedTimeOut: 0});
+                    delete carouselDetailCache[imageId];
+                    renderCarouselDetail(null);
+                    setTimeout(() => fetchCarouselDetail(imageId), 1200);
+                } catch (error) {
+                    const message = error?.response?.data?.message || error?.message || '派发失败';
+                    toastr.warning(message, null, {timeOut: 3200, extendedTimeOut: 0});
+                    $button.prop('disabled', false).text('立即重识别');
+                    return;
+                }
+
+                $button.prop('disabled', false).text('立即重识别');
             });
             $(document).on('keydown', function (e) {
                 if (!$carousel.hasClass('show')) return;

@@ -5,18 +5,28 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import torch
 from PIL import Image
-from transformers import BlipForConditionalGeneration, BlipProcessor
+from transformers import BlipForConditionalGeneration, BlipProcessor, logging as hf_logging
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+hf_logging.set_verbosity_error()
 
 MODEL_ID = os.getenv("LSKY_LOCAL_VISION_MODEL", "Salesforce/blip-image-captioning-base")
 HF_HOME = os.getenv("HF_HOME", "/opt/models/huggingface")
 TESSERACT_LANG = os.getenv("LSKY_LOCAL_OCR_LANG", "chi_sim+eng")
 DEFAULT_TOP = 3
+CAPTION_MAX_DIMENSION = max(int(os.getenv("LSKY_LOCAL_CAPTION_MAX_DIMENSION", "224")), 160)
+OCR_MAX_DIMENSION = max(int(os.getenv("LSKY_LOCAL_OCR_MAX_DIMENSION", "1280")), 512)
+OCR_TIMEOUT_SECONDS = max(int(os.getenv("LSKY_LOCAL_OCR_TIMEOUT", "10")), 5)
+CAPTION_MAX_NEW_TOKENS = max(int(os.getenv("LSKY_LOCAL_CAPTION_MAX_NEW_TOKENS", "10")), 6)
+CAPTION_NUM_BEAMS = max(int(os.getenv("LSKY_LOCAL_CAPTION_NUM_BEAMS", "1")), 1)
 
 
 @dataclass(frozen=True)
@@ -90,47 +100,123 @@ STOPWORDS = {
     "set", "close", "up", "image", "photo", "picture", "there", "it", "its",
 }
 
+LOW_SIGNAL_TERMS = {
+    "person",
+    "woman",
+    "man",
+    "pink",
+    "blue",
+    "red",
+    "green",
+    "yellow",
+    "black",
+    "white",
+    "gray",
+    "grey",
+    "orange",
+    "purple",
+    "brown",
+    "beige",
+}
+
 _PROCESSOR = None
 _MODEL = None
+
+
+def resolve_model_source() -> str:
+    candidate = Path(MODEL_ID)
+    if candidate.exists():
+        return str(candidate)
+
+    snapshots_root = (
+        Path(HF_HOME)
+        / "hub"
+        / f"models--{MODEL_ID.replace('/', '--')}"
+        / "snapshots"
+    )
+
+    if not snapshots_root.is_dir():
+        return MODEL_ID
+
+    snapshots = []
+    for snapshot in snapshots_root.iterdir():
+        if not snapshot.is_dir():
+            continue
+        if not (snapshot / "preprocessor_config.json").is_file():
+            continue
+        if not ((snapshot / "pytorch_model.bin").is_file() or (snapshot / "model.safetensors").is_file()):
+            continue
+        snapshots.append(snapshot)
+
+    if not snapshots:
+        return MODEL_ID
+
+    snapshots.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+    return str(snapshots[0])
 
 
 def load_model():
     global _PROCESSOR, _MODEL
     if _PROCESSOR is None or _MODEL is None:
+        model_source = resolve_model_source()
+        kwargs = {"local_files_only": True}
+        if model_source == MODEL_ID:
+            kwargs["cache_dir"] = HF_HOME
         _PROCESSOR = BlipProcessor.from_pretrained(
-            MODEL_ID,
-            cache_dir=HF_HOME,
-            local_files_only=True,
+            model_source,
+            **kwargs,
         )
         _MODEL = BlipForConditionalGeneration.from_pretrained(
-            MODEL_ID,
-            cache_dir=HF_HOME,
-            local_files_only=True,
+            model_source,
+            **kwargs,
         )
         _MODEL.eval()
     return _PROCESSOR, _MODEL
 
 
+def open_image(image_path: Path, max_dimension: int) -> Image.Image:
+    image = Image.open(image_path).convert("RGB")
+    if max(image.size) <= max_dimension:
+        return image
+
+    resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+    image.thumbnail((max_dimension, max_dimension), resample)
+    return image
+
+
 def generate_caption(image_path: Path) -> str:
     processor, model = load_model()
-    image = Image.open(image_path).convert("RGB")
-    inputs = processor(images=image, return_tensors="pt")
-    with torch.no_grad():
-        tokens = model.generate(
-            **inputs,
-            max_new_tokens=32,
-            num_beams=3,
-        )
-    return processor.decode(tokens[0], skip_special_tokens=True).strip()
+    image = open_image(image_path, CAPTION_MAX_DIMENSION)
+    try:
+        inputs = processor(images=image, return_tensors="pt")
+        with torch.no_grad():
+            tokens = model.generate(
+                **inputs,
+                max_new_tokens=CAPTION_MAX_NEW_TOKENS,
+                num_beams=CAPTION_NUM_BEAMS,
+            )
+        return processor.decode(tokens[0], skip_special_tokens=True).strip()
+    finally:
+        image.close()
 
 
 def run_ocr(image_path: Path) -> str:
-    result = subprocess.run(
-        ["tesseract", str(image_path), "stdout", "-l", TESSERACT_LANG, "--psm", "6"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    image = open_image(image_path, OCR_MAX_DIMENSION)
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".png") as handle:
+            image.save(handle.name, format="PNG", optimize=True)
+            try:
+                result = subprocess.run(
+                    ["tesseract", handle.name, "stdout", "-l", TESSERACT_LANG, "--psm", "6"],
+                    capture_output=True,
+                    text=True,
+                    timeout=OCR_TIMEOUT_SECONDS,
+                )
+            except subprocess.TimeoutExpired:
+                return ""
+    finally:
+        image.close()
+
     if result.returncode != 0:
         return ""
 
@@ -151,6 +237,14 @@ def extract_ocr_tokens(ocr_text: str) -> list[str]:
     tokens = re.findall(r"[a-z0-9][a-z0-9_-]*", lower)
     chinese = re.findall(r"[\u4e00-\u9fff]{2,8}", ocr_text)
     return tokens + chinese
+
+
+def extract_origin_name_tokens(origin_name: str) -> list[str]:
+    if not origin_name:
+        return []
+
+    stem = Path(origin_name).stem.replace("-", " ").replace("_", " ")
+    return extract_caption_tokens(stem)
 
 
 def match_entries(text: str, top: int) -> tuple[list[str], list[str], list[dict[str, object]]]:
@@ -210,29 +304,49 @@ def build_keywords(
     matched_keywords: list[str],
     caption_tokens: list[str],
     ocr_tokens: list[str],
+    origin_name_tokens: list[str],
 ) -> list[str]:
     values = []
     values.extend(labels)
     values.extend(matched_keywords)
     values.extend(caption_tokens[:8])
     values.extend(ocr_tokens[:8])
+    values.extend(origin_name_tokens[:8])
     return unique(values)[:12]
 
 
-def analyze(image_path: Path, top: int) -> dict[str, object]:
+def has_confident_seed_signal(classifications: list[dict[str, object]]) -> bool:
+    for item in classifications:
+        token = normalize_whitespace(str(item.get("en", "")).lower())
+        if token and token not in LOW_SIGNAL_TERMS:
+            return True
+    return False
+
+
+def analyze(image_path: Path, top: int, origin_name: str = "") -> dict[str, object]:
     start = time.time()
-    raw_caption = generate_caption(image_path)
     ocr_text = run_ocr(image_path)
-    caption_tokens = extract_caption_tokens(raw_caption)
     ocr_tokens = extract_ocr_tokens(ocr_text)
+    origin_name_tokens = extract_origin_name_tokens(origin_name)
 
     labels, matched_keywords, classifications = match_entries(
-        f"{raw_caption} {' '.join(ocr_tokens)}",
+        f"{' '.join(ocr_tokens)} {' '.join(origin_name_tokens)}",
         top,
     )
 
+    raw_caption = ""
+    caption_tokens: list[str] = []
+
+    if not has_confident_seed_signal(classifications):
+        raw_caption = generate_caption(image_path)
+        caption_tokens = extract_caption_tokens(raw_caption)
+        labels, matched_keywords, classifications = match_entries(
+            f"{raw_caption} {' '.join(ocr_tokens)} {' '.join(origin_name_tokens)}",
+            top,
+        )
+
     caption = build_caption(raw_caption, labels)
-    keywords = build_keywords(labels, matched_keywords, caption_tokens, ocr_tokens)
+    keywords = build_keywords(labels, matched_keywords, caption_tokens, ocr_tokens, origin_name_tokens)
 
     return {
         "caption": caption,
@@ -249,11 +363,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Local image intelligence via BLIP caption + Tesseract OCR")
     parser.add_argument("image_path", help="Absolute path to the image file")
     parser.add_argument("--top", type=int, default=DEFAULT_TOP, help="Maximum number of top labels/classifications")
+    parser.add_argument("--origin-name", default="", help="Original filename hint for local intelligence")
     return parser.parse_args()
 
 
 def main() -> int:
-    torch.set_num_threads(max(1, min(os.cpu_count() or 1, 4)))
+    torch.set_num_threads(1)
+    if hasattr(torch, "set_num_interop_threads"):
+        torch.set_num_interop_threads(1)
     args = parse_args()
     image_path = Path(args.image_path)
 
@@ -262,7 +379,7 @@ def main() -> int:
         return 1
 
     try:
-        payload = analyze(image_path, max(args.top, 1))
+        payload = analyze(image_path, max(args.top, 1), str(args.origin_name or ""))
     except Exception as exc:  # noqa: BLE001
         print(str(exc), file=sys.stderr)
         return 1

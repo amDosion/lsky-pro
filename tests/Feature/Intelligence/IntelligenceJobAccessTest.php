@@ -36,7 +36,22 @@ class IntelligenceJobAccessTest extends TestCase
         $this->actingAs($admin)
             ->get('/advanced/jobs')
             ->assertOk()
-            ->assertSee('作业中心');
+            ->assertSee('作业中心')
+            ->assertSee('单图立即重识别')
+            ->assertSee('定时回填');
+    }
+
+    public function test_admin_images_page_contains_single_image_reanalyze_entry_hook(): void
+    {
+        $admin = $this->createTestUser([
+            'is_adminer' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/images')
+            ->assertOk()
+            ->assertSee('single-intelligence-dispatch', false)
+            ->assertSee('立即重识别');
     }
 
     public function test_regular_user_can_still_read_personal_intelligence_status(): void

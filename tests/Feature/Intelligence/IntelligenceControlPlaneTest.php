@@ -60,6 +60,9 @@ class IntelligenceControlPlaneTest extends TestCase
             ->assertJsonPath('data.intelligence.control_plane.missing_count', 2)
             ->assertJsonPath('data.intelligence.control_plane.pending_count', 1)
             ->assertJsonPath('data.intelligence.control_plane.default_options.limit', 25)
+            ->assertJsonPath('data.intelligence.control_plane.single_image_options.limit', 1)
+            ->assertJsonPath('data.intelligence.control_plane.scheduler.cadence', 'hourly')
+            ->assertJsonPath('data.intelligence.control_plane.scheduler.latest_run', null)
             ->assertJsonPath('data.intelligence.control_plane.latest_run', null);
 
         $payload = [
@@ -220,6 +223,105 @@ class IntelligenceControlPlaneTest extends TestCase
             ->assertJsonPath('data.result.dispatched', 0)
             ->assertJsonPath('data.result.samples.0.image_id', $placeholderImageId)
             ->assertJsonPath('data.result.samples.0.reason', 'placeholder_record');
+    }
+
+    public function test_dispatch_recovers_terminal_image_lock_before_requeueing(): void
+    {
+        Queue::fake();
+
+        $admin = $this->createTestUser([
+            'is_adminer' => true,
+        ]);
+        $owner = $this->createTestUser();
+        $imageId = $this->insertImage($owner, 'icp-stale-lock', now()->subHours(3));
+
+        DB::table('image_intelligence_records')->insert([
+            'image_id' => $imageId,
+            'user_id' => $owner->id,
+            'status' => 'failed',
+            'source' => 'metadata_placeholder',
+            'source_version' => 1,
+            'ocr_text' => null,
+            'caption' => null,
+            'summary' => null,
+            'prompt_hint' => null,
+            'labels' => null,
+            'keywords' => null,
+            'metadata' => json_encode(['fallback' => true], JSON_UNESCAPED_UNICODE),
+            'analyzed_at' => now()->subHours(3),
+            'last_error' => 'timeout',
+            'created_at' => now()->subHours(3),
+            'updated_at' => now()->subHours(3),
+        ]);
+
+        Cache::put('image_intelligence.dispatch.'.$imageId, now()->timestamp, 7200);
+
+        $this->actingAs($admin)
+            ->postJson('/advanced-api/intelligence/backfill-dispatch', [
+                'image_id' => $imageId,
+                'limit' => 1,
+                'chunk' => 1,
+                'older_than_minutes' => 0,
+                'sample_limit' => 1,
+                'force' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.result.dispatched', 1)
+            ->assertJsonPath('data.result.skipped', 0);
+
+        Queue::assertPushed(
+            AnalyzeImageIntelligenceJob::class,
+            fn (AnalyzeImageIntelligenceJob $job) => $job->imageId === $imageId
+        );
+    }
+
+    public function test_status_endpoint_exposes_latest_scheduler_run_separately(): void
+    {
+        $admin = $this->createTestUser([
+            'is_adminer' => true,
+        ]);
+
+        DB::table('image_intelligence_runs')->insert([
+            [
+                'mode' => 'dispatch',
+                'status' => 'completed',
+                'trigger_source' => 'web',
+                'matched' => 1,
+                'processed' => 1,
+                'dispatched' => 1,
+                'skipped' => 0,
+                'succeeded' => 1,
+                'failed' => 0,
+                'started_at' => now()->subMinutes(10),
+                'finished_at' => now()->subMinutes(9),
+                'created_at' => now()->subMinutes(10),
+                'updated_at' => now()->subMinutes(9),
+            ],
+            [
+                'mode' => 'dispatch',
+                'status' => 'processing',
+                'trigger_source' => 'scheduler',
+                'matched' => 3,
+                'processed' => 3,
+                'dispatched' => 3,
+                'skipped' => 0,
+                'succeeded' => 2,
+                'failed' => 0,
+                'started_at' => now()->subMinutes(5),
+                'finished_at' => null,
+                'created_at' => now()->subMinutes(5),
+                'updated_at' => now()->subMinutes(4),
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/advanced-api/intelligence/status')
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.intelligence.control_plane.latest_run.trigger_source', 'scheduler')
+            ->assertJsonPath('data.intelligence.control_plane.scheduler.latest_run.trigger_source', 'scheduler')
+            ->assertJsonPath('data.intelligence.control_plane.scheduler.latest_run.status', 'processing');
     }
 
     private function insertImage(\App\Models\User $user, string $key, \Illuminate\Support\Carbon $createdAt): int

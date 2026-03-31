@@ -9,6 +9,11 @@ class LocalImageIntelligenceAnalyzer
     private const SCRIPT_RELATIVE_PATH = 'scripts/image_intelligence/classify_ocr.py';
     private const UPLOADS_ROOT = '/var/www/html/storage/app/uploads';
 
+    public function __construct(
+        private readonly LocalImageIntelligenceProcessRunner $processRunner
+    ) {
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -26,40 +31,12 @@ class LocalImageIntelligenceAnalyzer
             throw new \RuntimeException('本地图像分析脚本不存在: '.$scriptPath);
         }
 
-        // Use proc_open for safe execution without shell interpolation
-        $process = proc_open(
-            ['python3', $scriptPath, $filePath, '--top', '3'],
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes
+        $decoded = $this->processRunner->run(
+            $scriptPath,
+            $filePath,
+            (string) $image->origin_name,
+            3
         );
-
-        if (! is_resource($process)) {
-            throw new \RuntimeException('无法启动本地图像分析进程');
-        }
-
-        fclose($pipes[0]);
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        $errorOutput = trim((string) stream_get_contents($pipes[2]));
-        fclose($pipes[2]);
-        $exitCode = proc_close($process);
-
-        if ($exitCode !== 0 || empty($output)) {
-            if ($errorOutput !== '') {
-                throw new \RuntimeException('本地图像分析脚本执行失败: '.mb_substr($errorOutput, 0, 300));
-            }
-
-            throw new \RuntimeException('本地图像分析脚本未返回结果');
-        }
-
-        $decoded = json_decode(trim($output), true);
-        if (! is_array($decoded) || isset($decoded['error'])) {
-            throw new \RuntimeException('本地图像分析失败: ' . ($decoded['error'] ?? '未知错误'));
-        }
 
         $labels = $this->normalizeList($decoded['labels'] ?? []);
         $keywords = $this->normalizeList($decoded['keywords'] ?? []);
@@ -91,7 +68,7 @@ class LocalImageIntelligenceAnalyzer
                 'provider' => 'local',
                 'provider_label' => 'BLIP-base + Tesseract',
                 'model' => 'blip-image-captioning-base',
-                'transport' => 'proc_open',
+                'transport' => 'symfony_process',
                 'base_url' => '',
                 'fallback' => false,
                 'fallback_reason' => null,

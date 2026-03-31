@@ -77,12 +77,12 @@ if [ ! -d "$BLIP_MODEL_ROOT/snapshots" ]; then
   exit 1
 fi
 
-if ! find "$BLIP_MODEL_ROOT/snapshots" -type f -name 'preprocessor_config.json' | grep -q .; then
+if ! find "$BLIP_MODEL_ROOT/snapshots" \( -type f -o -type l \) -name 'preprocessor_config.json' | grep -q .; then
   echo "[FAIL] local BLIP preprocessor cache missing under: $BLIP_MODEL_ROOT/snapshots"
   exit 1
 fi
 
-if ! find "$BLIP_MODEL_ROOT/snapshots" -type f \( -name 'pytorch_model.bin' -o -name 'model.safetensors' \) | grep -q .; then
+if ! find "$BLIP_MODEL_ROOT/snapshots" \( -type f -o -type l \) \( -name 'pytorch_model.bin' -o -name 'model.safetensors' \) | grep -q .; then
   echo "[FAIL] local BLIP weight cache missing under: $BLIP_MODEL_ROOT/snapshots"
   exit 1
 fi

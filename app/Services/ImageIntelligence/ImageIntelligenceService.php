@@ -24,20 +24,22 @@ class ImageIntelligenceService
 
     public function dispatch(Image $image, ?int $runId = null): bool
     {
-        if (! $this->acquireDispatchLock((int) $image->id)) {
+        $imageId = (int) $image->id;
+
+        if (! $this->acquireDispatchLock($imageId) && ! $this->recoverTerminalDispatchLock($imageId)) {
             return false;
         }
 
         $this->markPending($image);
 
         try {
-            AnalyzeImageIntelligenceJob::dispatch((int) $image->id, $runId)
+            AnalyzeImageIntelligenceJob::dispatch($imageId, $runId)
                 ->onConnection(config('queue.upload_pipeline.connection'))
                 ->onQueue(config('queue.upload_pipeline.queue', 'upload-critical'))
                 ->afterCommit();
         } catch (\Throwable $e) {
-            $this->releaseDispatchLock((int) $image->id);
-            $this->markFailed((int) $image->id, $e);
+            $this->releaseDispatchLock($imageId);
+            $this->markFailed($imageId, $e);
             throw $e;
         }
 
@@ -289,6 +291,33 @@ class ImageIntelligenceService
             now()->timestamp,
             self::DISPATCH_LOCK_TTL_SECONDS
         );
+    }
+
+    private function recoverTerminalDispatchLock(int $imageId): bool
+    {
+        $record = ImageIntelligenceRecord::query()
+            ->where('image_id', $imageId)
+            ->first(['status', 'updated_at']);
+
+        if (! $record) {
+            $this->releaseDispatchLock($imageId);
+            return $this->acquireDispatchLock($imageId);
+        }
+
+        $status = strtolower(trim((string) $record->status));
+        $updatedAt = $record->updated_at;
+        $isTerminal = in_array($status, ['ready', 'failed', 'success', 'completed'], true);
+        $isStaleInFlight = in_array($status, ['pending', 'processing'], true)
+            && $updatedAt !== null
+            && $updatedAt->lt(now()->subMinutes(15));
+
+        if (! $isTerminal && ! $isStaleInFlight) {
+            return false;
+        }
+
+        $this->releaseDispatchLock($imageId);
+
+        return $this->acquireDispatchLock($imageId);
     }
 
     private function dispatchLockKey(int $imageId): string
