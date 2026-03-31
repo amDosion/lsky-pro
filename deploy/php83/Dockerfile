@@ -72,15 +72,11 @@ RUN set -eux; \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 RUN set -eux; \
-    pip3 install --no-cache-dir --break-system-packages "transformers==4.26.1"; \
     python3 - <<'PY'
 import torch
 from PIL import Image
-from transformers import BlipForConditionalGeneration, BlipProcessor
 print(torch.__version__)
 print(Image.__name__)
-print(BlipProcessor.__name__)
-print(BlipForConditionalGeneration.__name__)
 PY
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
@@ -101,7 +97,31 @@ RUN composer install \
     --no-scripts
 
 RUN python3 -m pip install --no-cache-dir --break-system-packages -r /tmp/image-intelligence-requirements.txt \
+    && python3 - <<'PY' \
     && rm -f /tmp/image-intelligence-requirements.txt
+import torch
+import transformers
+from PIL import Image
+from transformers import BlipForConditionalGeneration, BlipProcessor
+
+expected_transformers = "4.26.1"
+
+if transformers.__version__ != expected_transformers:
+    raise SystemExit(
+        f"expected transformers {expected_transformers}, got {transformers.__version__}"
+    )
+
+if not transformers.is_torch_available():
+    raise SystemExit(
+        f"transformers {transformers.__version__} cannot use installed torch {torch.__version__}"
+    )
+
+print(torch.__version__)
+print(transformers.__version__)
+print(Image.__name__)
+print(BlipProcessor.__name__)
+print(BlipForConditionalGeneration.__name__)
+PY
 
 COPY . .
 

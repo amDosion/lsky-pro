@@ -70,6 +70,23 @@ if [ ! -f "$LOCAL_SCRIPT" ]; then
   exit 1
 fi
 
+HF_CACHE_ROOT="${HF_HOME:-/opt/models/huggingface}"
+BLIP_MODEL_ROOT="$HF_CACHE_ROOT/hub/models--Salesforce--blip-image-captioning-base"
+if [ ! -d "$BLIP_MODEL_ROOT/snapshots" ]; then
+  echo "[FAIL] local BLIP model cache missing: $BLIP_MODEL_ROOT/snapshots"
+  exit 1
+fi
+
+if ! find "$BLIP_MODEL_ROOT/snapshots" -type f -name 'preprocessor_config.json' | grep -q .; then
+  echo "[FAIL] local BLIP preprocessor cache missing under: $BLIP_MODEL_ROOT/snapshots"
+  exit 1
+fi
+
+if ! find "$BLIP_MODEL_ROOT/snapshots" -type f \( -name 'pytorch_model.bin' -o -name 'model.safetensors' \) | grep -q .; then
+  echo "[FAIL] local BLIP weight cache missing under: $BLIP_MODEL_ROOT/snapshots"
+  exit 1
+fi
+
 if ! command -v python3 >/dev/null 2>&1; then
   echo "[FAIL] python3 not found for local image intelligence"
   exit 1
@@ -88,6 +105,31 @@ required = ["torch", "transformers", "PIL", "pytesseract"]
 missing = [name for name in required if importlib.util.find_spec(name) is None]
 if missing:
     print("[FAIL] missing local image intelligence Python packages: " + " ".join(missing))
+    sys.exit(1)
+
+import torch
+import transformers
+from transformers import BlipForConditionalGeneration, BlipProcessor
+
+expected_transformers = "4.26.1"
+
+if transformers.__version__ != expected_transformers:
+    print(
+        "[FAIL] unexpected transformers version: "
+        + transformers.__version__
+        + " (expected "
+        + expected_transformers
+        + ")"
+    )
+    sys.exit(1)
+
+if not transformers.is_torch_available():
+    print(
+        "[FAIL] transformers cannot use installed torch: "
+        + transformers.__version__
+        + " / "
+        + torch.__version__
+    )
     sys.exit(1)
 PY
 

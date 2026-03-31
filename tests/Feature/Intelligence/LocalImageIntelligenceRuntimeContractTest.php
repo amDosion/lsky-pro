@@ -16,4 +16,16 @@ class LocalImageIntelligenceRuntimeContractTest extends TestCase
         $this->assertFileExists(base_path($relativePath));
         $this->assertFileExists(base_path('scripts/image_intelligence/requirements.txt'));
     }
+
+    public function test_local_image_intelligence_python_requirements_are_pinned_for_runtime_compatibility(): void
+    {
+        $requirements = file(
+            base_path('scripts/image_intelligence/requirements.txt'),
+            FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES
+        );
+
+        $this->assertIsArray($requirements);
+        $this->assertContains('transformers==4.26.1', $requirements);
+        $this->assertContains('pytesseract==0.3.10', $requirements);
+    }
 }
