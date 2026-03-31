@@ -15,6 +15,8 @@ class AnalyzeImageIntelligenceJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 2;
+    public int $timeout = 420;
     public int $imageId;
     public ?int $runId;
 
@@ -22,8 +24,6 @@ class AnalyzeImageIntelligenceJob implements ShouldQueue
     {
         $this->imageId = $imageId;
         $this->runId = $runId && $runId > 0 ? $runId : null;
-        $this->tries = 2;
-        $this->timeout = 420;
     }
 
     public function handle(

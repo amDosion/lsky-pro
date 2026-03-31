@@ -151,7 +151,7 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     PHP_MAX_EXECUTION_TIME=120 \
     INIT_AUTO_BOOTSTRAP=false
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
   CMD bash /var/www/html/scripts/health/startup.sh || exit 1
 
 EXPOSE 80
