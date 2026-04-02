@@ -360,6 +360,30 @@ class AiProviderConfigService
         return $provider;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function globalProviderCatalog(): array
+    {
+        $providers = $this->all()['providers'] ?? [];
+
+        return collect($providers)
+            ->map(function (array $provider): array {
+                return [
+                    'provider' => (string) ($provider['provider'] ?? ''),
+                    'label' => (string) ($provider['label'] ?? ''),
+                    'ready' => (bool) ($provider['ready'] ?? false),
+                    'default_model' => (string) ($provider['default_model'] ?? ''),
+                    'models' => $this->normalizeModels(array_merge(
+                        is_array($provider['models'] ?? null) ? $provider['models'] : [],
+                        is_array($provider['remote_models'] ?? null) ? $provider['remote_models'] : []
+                    )),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     private function fetchOpenAiCompatibleModels(string $baseUrl, string $apiKey): array
     {
         $response = Http::acceptJson()

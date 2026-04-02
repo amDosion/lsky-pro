@@ -83,6 +83,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
 
+RUN mkdir -p /opt/models/huggingface
+
 COPY deploy/php83/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY deploy/php83/php.ini /usr/local/etc/php/conf.d/zz-lsky.ini
 COPY deploy/php83/entrypoint.sh /usr/local/bin/lsky-entrypoint
@@ -97,8 +99,10 @@ RUN composer install \
     --no-scripts
 
 RUN python3 -m pip install --no-cache-dir --break-system-packages -r /tmp/image-intelligence-requirements.txt \
-    && python3 - <<'PY' \
+    && HF_HOME=/opt/models/huggingface python3 - <<'PY' \
     && rm -f /tmp/image-intelligence-requirements.txt
+import numpy
+import onnxruntime
 import torch
 import transformers
 from PIL import Image
@@ -118,6 +122,8 @@ if not transformers.is_torch_available():
 
 print(torch.__version__)
 print(transformers.__version__)
+print(numpy.__version__)
+print(onnxruntime.__version__)
 print(Image.__name__)
 print(BlipProcessor.__name__)
 print(BlipForConditionalGeneration.__name__)
@@ -145,6 +151,7 @@ RUN rm -f .env installed.lock \
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_MEMORY_LIMIT=-1 \
+    HF_HOME=/opt/models/huggingface \
     PHP_MEMORY_LIMIT=512M \
     PHP_UPLOAD_MAX_FILESIZE=128M \
     PHP_POST_MAX_SIZE=128M \

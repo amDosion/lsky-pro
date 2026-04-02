@@ -63,6 +63,16 @@ return [
                 'models' => ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'],
             ],
         ],
+        ConfigKey::ImageIntelligenceEngine => 'local',
+        ConfigKey::ImageIntelligenceProvider => 'gpt',
+        ConfigKey::ImageIntelligenceModel => '',
+        ConfigKey::ImageIntelligenceEnableLabels => 1,
+        ConfigKey::ImageIntelligenceEnableSummary => 1,
+        ConfigKey::ImageIntelligenceEnableOcrText => 1,
+        ConfigKey::ImageIntelligenceAutoOnUpload => 1,
+        ConfigKey::ImageIntelligenceScheduleEnabled => 1,
+        ConfigKey::ImageIntelligenceScheduleCron => '0 * * * *',
+        ConfigKey::ImageIntelligenceRetryFailed => 1,
         ConfigKey::Mail => [
             'default' => 'smtp',
             'mailers' => [

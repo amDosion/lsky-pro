@@ -128,11 +128,15 @@
                         return escapeHtml(value || '-');
                     };
 
-                    const buildImageUrl = (item) => {
-                        const key = String(item?.key || '').trim();
-                        const ext = String(item?.extension || '').trim();
-                        if (!key || !ext) return '';
-                        return '/' + encodeURIComponent(key) + '.' + encodeURIComponent(ext);
+                    const resolvePreviewUrl = (item) => {
+                        const candidates = [item?.preview_url, item?.thumb_url, item?.url];
+                        for (const candidate of candidates) {
+                            const value = String(candidate || '').trim();
+                            if (value) {
+                                return value;
+                            }
+                        }
+                        return '';
                     };
 
                     const setState = (message, type) => {
@@ -167,17 +171,18 @@
                         }
 
                         tableBody.innerHTML = items.map((item) => {
-                            const imageUrl = buildImageUrl(item);
+                            const previewUrl = resolvePreviewUrl(item);
+                            const openUrl = String(item?.url || previewUrl || '').trim();
                             const key = String(item?.key || '');
-                            const originName = String(item?.origin_name || item?.alias_name || '-');
+                            const originName = String(item?.filename || item?.origin_name || item?.alias_name || '-');
                             const userName = String(item?.user?.name || '-');
                             const userEmail = String(item?.user?.email || '-');
                             const isPending = String(item?.review_status || '') === 'review_pending' && currentStatus === 'review_pending';
                             const reason = String(item?.review_reason || '').trim();
                             return '<tr data-key="' + escapeHtml(key) + '">' +
                                 '<td>' +
-                                    (imageUrl
-                                        ? '<a href="' + escapeHtml(imageUrl) + '" target="_blank" rel="noopener"><span class="r-thumb-wrap"><img class="r-thumb" src="' + escapeHtml(imageUrl) + '" alt="preview" loading="lazy"/></span></a>'
+                                    (previewUrl
+                                        ? '<a href="' + escapeHtml(openUrl || previewUrl) + '" target="_blank" rel="noopener"><span class="r-thumb-wrap"><img class="r-thumb" src="' + escapeHtml(previewUrl) + '" alt="' + escapeHtml(originName) + '" loading="lazy"/></span></a>'
                                         : '<span class="r-thumb-wrap"><span class="r-thumb-fallback">无预览</span></span>') +
                                 '</td>' +
                                 '<td><div class="r-key">' + escapeHtml(key || '-') + '</div><div style="font-size:11px;color:#64748b;margin-top:4px;">' + escapeHtml(originName) + '</div></td>' +

@@ -11,6 +11,7 @@ use App\Models\Image;
 use App\Models\ImageIntelligenceRecord;
 use App\Models\User;
 use App\Services\AiSearchService;
+use App\Services\ImageIntelligence\ImageIntelligenceViewStateService;
 use App\Services\ImageIntelligence\ImageTagVisibilityBridgeService;
 use App\Services\UserService;
 use App\Utils;
@@ -32,7 +33,8 @@ class ImageController extends Controller
     public function images(
         Request $request,
         AiSearchService $searchService,
-        ImageTagVisibilityBridgeService $tagVisibilityBridge
+        ImageTagVisibilityBridgeService $tagVisibilityBridge,
+        ImageIntelligenceViewStateService $intelligenceViewState
     ): Response
     {
         /** @var User $user */
@@ -87,6 +89,7 @@ class ImageController extends Controller
             ->with([
                 'group:id,configs',
                 'strategy:id,key,configs',
+                'intelligenceRecord:image_id,status,source,summary,caption,ocr_text,metadata,analyzed_at',
                 ...($decorateVisibleTags ? [
                     'tags:id,name',
                     'intelligenceTerms:id,image_id,source,term,normalized_term',
@@ -94,7 +97,7 @@ class ImageController extends Controller
             ])
             ->paginate($perPage);
 
-        $images->getCollection()->each(function (Image $image) use ($decorateVisibleTags, $tagVisibilityBridge) {
+        $images->getCollection()->each(function (Image $image) use ($decorateVisibleTags, $tagVisibilityBridge, $intelligenceViewState) {
             // 图片宽高过小会导致前端排版异常
             $image->width = max($image->width, 200);
             $image->height = max($image->height, 200);
@@ -105,9 +108,11 @@ class ImageController extends Controller
 
             $image->human_date = $image->created_at->diffForHumans();
             $image->date = $image->created_at->format('Y-m-d H:i:s');
+            $image->setAttribute('intelligence', $intelligenceViewState->buildListPayload($image->intelligenceRecord));
+            $image->unsetRelation('intelligenceRecord');
             $visible = [
                 'id', 'key', 'filename', 'url', 'thumb_url', 'preview_url', 'human_date', 'date', 'size', 'width', 'height', 'extension',
-                'review_status', 'review_reason', 'reviewed_at', 'reviewed_by', 'links', 'ai_score',
+                'review_status', 'review_reason', 'reviewed_at', 'reviewed_by', 'links', 'ai_score', 'intelligence',
             ];
 
             if ($decorateVisibleTags) {
@@ -264,6 +269,9 @@ class ImageController extends Controller
      */
     private function buildIntelligencePayload(?ImageIntelligenceRecord $record): array
     {
+        /** @var ImageIntelligenceViewStateService $viewState */
+        $viewState = app(ImageIntelligenceViewStateService::class);
+
         if (! $record) {
             return [
                 'available' => false,
@@ -272,12 +280,14 @@ class ImageController extends Controller
                 'mode' => 'legacy',
                 'source_version' => null,
                 'analyzed_at' => null,
+                'ready' => false,
                 'fallback' => true,
                 'fallback_reason' => 'missing_record',
                 'provider' => null,
                 'model' => null,
                 'caption' => null,
                 'summary' => null,
+                'display_summary' => null,
                 'prompt_hint' => null,
                 'ocr_text' => null,
                 'labels' => [],
@@ -288,7 +298,7 @@ class ImageController extends Controller
         }
 
         $metadata = is_array($record->metadata) ? $record->metadata : [];
-        $fallback = (bool) ($metadata['fallback'] ?? false) || trim((string) $record->source) === 'metadata_placeholder';
+        $fallback = $viewState->isFallbackRecord($record);
 
         return [
             'available' => true,
@@ -299,12 +309,16 @@ class ImageController extends Controller
                 : (str_starts_with(trim((string) $record->source), 'ai_provider:') ? 'provider_backed' : 'intelligence'),
             'source_version' => $record->source_version ? (int) $record->source_version : null,
             'analyzed_at' => optional($record->analyzed_at)->toDateTimeString(),
+            'ready' => $viewState->isReadyRecord($record),
             'fallback' => $fallback,
             'fallback_reason' => trim((string) ($metadata['fallback_reason'] ?? '')) ?: null,
             'provider' => trim((string) ($metadata['provider'] ?? '')) ?: null,
             'model' => trim((string) ($metadata['model'] ?? '')) ?: null,
             'caption' => $record->caption ? (string) $record->caption : null,
             'summary' => $record->summary ? (string) $record->summary : null,
+            'display_summary' => $fallback
+                ? null
+                : $viewState->buildDisplaySummary($record->summary, $record->caption, $record->ocr_text),
             'prompt_hint' => $record->prompt_hint ? (string) $record->prompt_hint : null,
             'ocr_text' => $record->ocr_text ? (string) $record->ocr_text : null,
             'labels' => is_array($record->labels) ? array_values($record->labels) : [],

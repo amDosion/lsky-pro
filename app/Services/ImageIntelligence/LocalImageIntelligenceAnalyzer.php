@@ -8,6 +8,7 @@ class LocalImageIntelligenceAnalyzer
 {
     private const SCRIPT_RELATIVE_PATH = 'scripts/image_intelligence/classify_ocr.py';
     private const UPLOADS_ROOT = '/var/www/html/storage/app/uploads';
+    private const DEFAULT_PROVIDER_LABEL = 'Local image tagger + OCR';
 
     public function __construct(
         private readonly LocalImageIntelligenceProcessRunner $processRunner
@@ -41,40 +42,61 @@ class LocalImageIntelligenceAnalyzer
         $labels = $this->normalizeList($decoded['labels'] ?? []);
         $keywords = $this->normalizeList($decoded['keywords'] ?? []);
         $caption = $this->truncate((string) ($decoded['caption'] ?? ''), 5000);
+        $summary = $this->truncate((string) ($decoded['summary'] ?? ''), 5000);
+        $promptHint = $this->truncate((string) ($decoded['prompt_hint'] ?? ''), 5000);
         $ocrText = $this->truncate((string) ($decoded['ocr_text'] ?? ''), 10000);
         $elapsedMs = (int) ($decoded['elapsed_ms'] ?? 0);
+        $rawMetadata = is_array($decoded['metadata'] ?? null) ? $decoded['metadata'] : [];
 
-        // Build summary from classification results
-        $summary = '';
-        if (! empty($decoded['classifications'])) {
+        if ($summary === '' && ! empty($decoded['classifications'])) {
             $parts = [];
             foreach (array_slice($decoded['classifications'], 0, 3) as $cls) {
-                $parts[] = sprintf('%s(%s) %.1f%%', $cls['zh'] ?? $cls['en'], $cls['en'], ($cls['confidence'] ?? 0) * 100);
+                $zh = trim((string) ($cls['zh'] ?? ''));
+                $en = trim((string) ($cls['en'] ?? ''));
+                $confidence = (float) ($cls['confidence'] ?? 0);
+
+                if ($zh !== '' && $en !== '' && $zh !== $en) {
+                    $parts[] = sprintf('%s(%s) %.1f%%', $zh, $en, $confidence * 100);
+                    continue;
+                }
+
+                $label = $zh !== '' ? $zh : $en;
+                if ($label !== '') {
+                    $parts[] = sprintf('%s %.1f%%', $label, $confidence * 100);
+                }
             }
-            $summary = '识别结果：' . implode('、', $parts);
+            $summary = $parts !== [] ? '识别结果：' . implode('、', $parts) : '';
         }
+
+        $providerLabel = trim((string) ($rawMetadata['provider_label'] ?? self::DEFAULT_PROVIDER_LABEL));
+        $model = trim((string) ($rawMetadata['model'] ?? ($rawMetadata['backend'] ?? 'local')));
+        $backend = trim((string) ($rawMetadata['backend'] ?? 'local'));
+        $generatedBy = trim((string) ($rawMetadata['generated_by'] ?? 'image_intelligence.local.v2'));
+
+        $metadata = array_merge($rawMetadata, [
+            'provider' => 'local',
+            'provider_label' => $providerLabel !== '' ? $providerLabel : self::DEFAULT_PROVIDER_LABEL,
+            'model' => $model !== '' ? $model : 'local',
+            'backend' => $backend !== '' ? $backend : 'local',
+            'transport' => 'symfony_process',
+            'base_url' => '',
+            'fallback' => false,
+            'fallback_reason' => null,
+            'elapsed_ms' => $elapsedMs,
+            'generated_by' => $generatedBy !== '' ? $generatedBy : 'image_intelligence.local.v2',
+        ]);
 
         return [
             'status' => 'ready',
             'source' => 'local_intelligence',
-            'source_version' => 1,
+            'source_version' => 2,
             'ocr_text' => $ocrText,
             'caption' => $caption,
             'summary' => $this->truncate($summary, 5000),
-            'prompt_hint' => '',
+            'prompt_hint' => $promptHint,
             'labels' => $labels,
             'keywords' => $keywords,
-            'metadata' => [
-                'provider' => 'local',
-                'provider_label' => 'BLIP-base + Tesseract',
-                'model' => 'blip-image-captioning-base',
-                'transport' => 'symfony_process',
-                'base_url' => '',
-                'fallback' => false,
-                'fallback_reason' => null,
-                'elapsed_ms' => $elapsedMs,
-                'generated_by' => 'image_intelligence.local.v1',
-            ],
+            'metadata' => $metadata,
             'analyzed_at' => now(),
             'last_error' => null,
         ];

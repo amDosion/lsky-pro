@@ -47,6 +47,10 @@ services:
       PHP_POST_MAX_SIZE: 128M
       PHP_MAX_EXECUTION_TIME: 120
       HF_HOME: /opt/models/huggingface
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: 240
       # 在完整版中，Redis 通过内部服务名连接
       REDIS_HOST: redis
@@ -96,6 +100,10 @@ services:
       LARAVEL_WORKER_TIMEOUT: 600
       LARAVEL_WORKER_QUEUES: upload-critical,default,ai-prompt,image-process,webhook-events,image-delete
       LARAVEL_QUEUE_CONNECTION: redis
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: 240
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -128,6 +136,10 @@ services:
       PHP_MEMORY_LIMIT: 512M
       HF_HOME: /opt/models/huggingface
       LARAVEL_SCHEDULE_INTERVAL: 60
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: 240
       REDIS_HOST: redis
       REDIS_PORT: 6379

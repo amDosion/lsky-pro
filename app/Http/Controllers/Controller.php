@@ -126,6 +126,8 @@ class Controller extends BaseController
     public function upload(Request $request, ImageService $service, UploadTaskService $uploadTaskService): Response
     {
         try {
+            $this->ensureAuthenticatedUserHasAlbum($request);
+
             if (Utils::config(ConfigKey::UploadPipelineAsyncEnabled, false)) {
                 $task = $uploadTaskService->createTask($request);
 
@@ -143,6 +145,14 @@ class Controller extends BaseController
             return $this->fail('服务异常，请稍后再试');
         }
         return $this->success('上传成功', $uploadTaskService->makeImageResponse($image));
+    }
+
+    protected function ensureAuthenticatedUserHasAlbum(Request $request): void
+    {
+        $user = $request->user();
+        if ($user && ! $user->albums()->exists()) {
+            throw new UploadException('请先创建相册后再上传图片');
+        }
     }
 
     public function output(Request $request, ImageService $service, SignedUrlService $signedUrlService, ImagePlaceholderService $placeholderService): StreamedResponse|BinaryFileResponse

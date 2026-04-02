@@ -32,17 +32,26 @@ class ReviewController extends Controller
 
         $images = Image::query()
             ->select([
-                'id', 'user_id', 'album_id', 'key', 'origin_name', 'alias_name', 'size', 'mimetype', 'extension',
+                'id', 'user_id', 'album_id', 'group_id', 'strategy_id', 'key', 'path', 'name', 'origin_name', 'alias_name',
+                'size', 'mimetype', 'extension', 'md5',
                 'review_status', 'review_reason', 'reviewed_at', 'reviewed_by', 'created_at',
             ])
             ->where('review_status', $status)
             ->with([
                 'user:id,name,email',
                 'album:id,name',
+                'group:id,configs',
+                'strategy:id,key,configs',
             ])
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
+
+        $images->getCollection()->each(function (Image $image): void {
+            $image->append(['url', 'thumb_url', 'preview_url', 'filename']);
+            $image->unsetRelation('group');
+            $image->unsetRelation('strategy');
+        });
 
         return $this->success('success', $images);
     }

@@ -43,7 +43,11 @@ PY
     public function test_runner_surfaces_process_timeout_clearly(): void
     {
         $previousTimeout = getenv('LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT');
+        $previousServerTimeout = $_SERVER['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] ?? null;
+        $previousEnvTimeout = $_ENV['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] ?? null;
         putenv('LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT=15');
+        $_SERVER['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] = '15';
+        $_ENV['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] = '15';
 
         $script = $this->makePythonScript(<<<'PY'
 import argparse
@@ -72,6 +76,100 @@ PY
                 putenv('LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT');
             } else {
                 putenv('LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT='.$previousTimeout);
+            }
+
+            if ($previousServerTimeout === null) {
+                unset($_SERVER['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT']);
+            } else {
+                $_SERVER['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] = $previousServerTimeout;
+            }
+
+            if ($previousEnvTimeout === null) {
+                unset($_ENV['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT']);
+            } else {
+                $_ENV['LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT'] = $previousEnvTimeout;
+            }
+        }
+    }
+
+    public function test_runner_forwards_local_tagger_environment_to_child_process(): void
+    {
+        $previousBackend = getenv('LSKY_LOCAL_TAGGER_BACKEND');
+        $previousModel = getenv('LSKY_LOCAL_TAGGER_MODEL');
+        $previousServerBackend = $_SERVER['LSKY_LOCAL_TAGGER_BACKEND'] ?? null;
+        $previousServerModel = $_SERVER['LSKY_LOCAL_TAGGER_MODEL'] ?? null;
+        $previousEnvBackend = $_ENV['LSKY_LOCAL_TAGGER_BACKEND'] ?? null;
+        $previousEnvModel = $_ENV['LSKY_LOCAL_TAGGER_MODEL'] ?? null;
+
+        putenv('LSKY_LOCAL_TAGGER_BACKEND=wd_tagger');
+        putenv('LSKY_LOCAL_TAGGER_MODEL=/opt/models/huggingface/wd-vit-tagger-v3');
+        $_SERVER['LSKY_LOCAL_TAGGER_BACKEND'] = 'wd_tagger';
+        $_SERVER['LSKY_LOCAL_TAGGER_MODEL'] = '/opt/models/huggingface/wd-vit-tagger-v3';
+        $_ENV['LSKY_LOCAL_TAGGER_BACKEND'] = 'wd_tagger';
+        $_ENV['LSKY_LOCAL_TAGGER_MODEL'] = '/opt/models/huggingface/wd-vit-tagger-v3';
+
+        $script = $this->makePythonScript(<<<'PY'
+import argparse
+import json
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument("image_path")
+parser.add_argument("--top", type=int, default=3)
+parser.add_argument("--origin-name", default="")
+parser.parse_args()
+
+print(json.dumps({
+    "labels": ["袜子"],
+    "keywords": ["袜子", "sock"],
+    "backend": os.getenv("LSKY_LOCAL_TAGGER_BACKEND"),
+    "model": os.getenv("LSKY_LOCAL_TAGGER_MODEL"),
+    "elapsed_ms": 12,
+}, ensure_ascii=False))
+PY
+        );
+
+        try {
+            $runner = new LocalImageIntelligenceProcessRunner();
+            $payload = $runner->run($script, '/tmp/dummy-image.png', '', 3);
+
+            $this->assertSame('wd_tagger', $payload['backend']);
+            $this->assertSame('/opt/models/huggingface/wd-vit-tagger-v3', $payload['model']);
+        } finally {
+            if ($previousBackend === false) {
+                putenv('LSKY_LOCAL_TAGGER_BACKEND');
+            } else {
+                putenv('LSKY_LOCAL_TAGGER_BACKEND='.$previousBackend);
+            }
+
+            if ($previousModel === false) {
+                putenv('LSKY_LOCAL_TAGGER_MODEL');
+            } else {
+                putenv('LSKY_LOCAL_TAGGER_MODEL='.$previousModel);
+            }
+
+            if ($previousServerBackend === null) {
+                unset($_SERVER['LSKY_LOCAL_TAGGER_BACKEND']);
+            } else {
+                $_SERVER['LSKY_LOCAL_TAGGER_BACKEND'] = $previousServerBackend;
+            }
+
+            if ($previousServerModel === null) {
+                unset($_SERVER['LSKY_LOCAL_TAGGER_MODEL']);
+            } else {
+                $_SERVER['LSKY_LOCAL_TAGGER_MODEL'] = $previousServerModel;
+            }
+
+            if ($previousEnvBackend === null) {
+                unset($_ENV['LSKY_LOCAL_TAGGER_BACKEND']);
+            } else {
+                $_ENV['LSKY_LOCAL_TAGGER_BACKEND'] = $previousEnvBackend;
+            }
+
+            if ($previousEnvModel === null) {
+                unset($_ENV['LSKY_LOCAL_TAGGER_MODEL']);
+            } else {
+                $_ENV['LSKY_LOCAL_TAGGER_MODEL'] = $previousEnvModel;
             }
         }
     }

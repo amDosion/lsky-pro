@@ -19,3 +19,5 @@ prompts
 tests
 coverage
 tmp
+.tmp-phpunit-*
+test-results

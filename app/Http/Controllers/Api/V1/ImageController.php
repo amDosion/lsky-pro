@@ -52,6 +52,8 @@ class ImageController extends Controller
         }
 
         try {
+            $this->ensureAuthenticatedUserHasAlbum($request);
+
             if (Utils::config(ConfigKey::UploadPipelineAsyncEnabled, false)) {
                 $task = $uploadTaskService->createTask($request);
 

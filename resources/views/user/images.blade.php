@@ -624,6 +624,11 @@
             background: rgba(71, 85, 105, .88);
         }
 
+        .images-v2 .images-item-badge.is-success {
+            background: rgba(5, 150, 105, .9);
+            color: #ecfdf5;
+        }
+
         .images-v2 .images-toolbar button:disabled,
         .images-v2 .images-toolbar input:disabled {
             opacity: .6;
@@ -901,6 +906,8 @@
             };
 
             let selectedAlbum = {}; // 选择的相册
+            let albumsTreeReady = false;
+            let albumsTreeFailed = false;
 
             const HEADER_TITLE = '#header-title';
             const IMAGES_SCROLL = '#images-scroll';
@@ -919,6 +926,13 @@
                 escapeHtml,
                 copyText,
                 renderThumbButtons,
+                renderImageGridCard,
+                renderImageListRow,
+                resolveImagePreviewUrl,
+                resolveImageThumbUrl,
+                resolveImageOpenUrl,
+                hasReadyIntelligence,
+                getIntelligenceDisplaySummary,
                 normalizeLoopIndex: normalizeCarouselIndex,
                 setPanelScrollLocked: setCarouselScrollLocked,
             } = window.LskyMediaCarousel;
@@ -1080,6 +1094,9 @@
             const buildImageStatusBadges = (image = {}) => {
                 const reviewStatus = String(image.review_status || '').trim();
                 const badges = [];
+                if (hasReadyIntelligence(image)) {
+                    badges.push({text: '已识别', className: 'is-success'});
+                }
                 if (image.is_unhealthy === true) {
                     badges.push({text: '疑似违规', className: 'is-danger'});
                 }
@@ -1095,30 +1112,51 @@
                 currentImageRecords = append ? currentImageRecords.concat(images) : images.slice();
                 setImagesLoadError('');
                 let html = '';
-                const template = imageViewMode === 'list' ? '#images-item-list-tpl' : '#images-item-tpl';
-                for (const i in images) {
-                    const typeText = escapeHtml(String(images[i].extension || '-').toUpperCase());
-                    const sizeText = escapeHtml(utils.formatSize(images[i].size * 1024));
-                    const safeUrl = escapeHtml(String(images[i].url || ''));
-                    const safePreviewUrl = escapeHtml(String(images[i].preview_url || images[i].thumb_url || images[i].url || ''));
-                    const safeThumbUrl = escapeHtml(String(images[i].preview_url || images[i].thumb_url || images[i].url || ''));
-                    const safeName = escapeHtml(String(images[i].filename || ''));
-                    const safeJson = escapeHtml(JSON.stringify(images[i]));
-                    const statusBadges = buildImageStatusBadges(images[i]);
-                    html += $(template).html()
-                        .replace(/__id__/g, images[i].id)
-                        .replace(/__name__/g, safeName.replace(/\$/g, '$$$$'))
-                        .replace(/__type__/g, typeText)
-                        .replace(/__human_date__/g, escapeHtml(images[i].human_date))
-                        .replace(/__date__/g, escapeHtml(images[i].date))
-                        .replace(/__size__/g, sizeText)
-                        .replace(/__url__/g, safeUrl.replace(/\$/g, '$$$$'))
-                        .replace(/__preview_url__/g, safePreviewUrl.replace(/\$/g, '$$$$'))
-                        .replace(/__thumb_url__/g, safeThumbUrl.replace(/\$/g, '$$$$'))
-                        .replace(/__status_badges__/g, statusBadges.replace(/\$/g, '$$$$'))
-                        .replace(/__width__/g, images[i].width)
-                        .replace(/__height__/g, images[i].height)
-                        .replace(/__json__/g, safeJson.replace(/\$/g, '$$$$'));
+                for (const image of images) {
+                    const typeText = escapeHtml(String(image.extension || '-').toUpperCase());
+                    const sizeText = escapeHtml(utils.formatSize(image.size * 1024));
+                    const safeUrl = escapeHtml(resolveImageOpenUrl(image));
+                    const safeName = escapeHtml(String(image.filename || ''));
+                    const safeJson = JSON.stringify(image);
+                    const statusBadges = buildImageStatusBadges(image);
+
+                    if (imageViewMode === 'list') {
+                        html += renderImageListRow({
+                            tag: 'div',
+                            attributes: {
+                                'data-id': image.id,
+                                'data-json': safeJson,
+                                class: 'images-item relative cursor-default outline outline-2 outline-offset-2 outline-transparent',
+                            },
+                            contentHtml:
+                                `<div class="list-col list-thumb-wrap"><img class="images-list-thumb" alt="${safeName}" data-original="${escapeHtml(resolveImagePreviewUrl(image))}" src="${escapeHtml(resolveImageThumbUrl(image))}" width="${image.width}" height="${image.height}" loading="lazy"></div>` +
+                                `<div class="list-col list-type"><div>${typeText}</div><div class="images-item-badges is-inline">${statusBadges}</div></div>` +
+                                `<div class="list-col list-url" title="${safeUrl}"><span class="list-url-text">${safeUrl}</span></div>` +
+                                `<div class="list-col list-resolution">${image.width} × ${image.height}</div>` +
+                                `<div class="list-col list-size">${sizeText}</div>` +
+                                `<div class="list-col list-date">${escapeHtml(image.date)}</div>` +
+                                `<div class="list-col list-ops"><span class="list-op-group"><button type="button" class="list-op-btn list-op-copy" data-url="${safeUrl}"><i class="fas fa-link"></i>复制URL</button><button type="button" class="list-op-btn list-op-rename"><i class="fas fa-pen"></i>重命名</button><button type="button" class="list-op-btn list-op-delete"><i class="fas fa-trash"></i>删除</button></span><button type="button" class="image-selector overflow-hidden cursor-pointer" title="选择"><span class="text-xl"><i class="fas fa-check-circle block rounded-full bg-white text-white border border-gray-500"></i></span></button></div>`,
+                        });
+                        continue;
+                    }
+
+                    html += renderImageGridCard({
+                        tag: 'a',
+                        attributes: {
+                            href: 'javascript:void(0)',
+                            'data-id': image.id,
+                            'data-json': safeJson,
+                            class: 'images-item relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent',
+                        },
+                        image,
+                        alt: image.filename || '',
+                        width: image.width,
+                        height: image.height,
+                        contentHtml:
+                            `<div class="images-item-badges">${statusBadges}</div>` +
+                            `<div class="image-selector absolute z-[2] top-0 right-0 overflow-hidden cursor-pointer sm:hidden group-hover:block"><div class="p-1 text-xl sm:text-2xl"><i class="fas fa-check-circle block rounded-full bg-white text-white border border-gray-500"></i></div></div>` +
+                            `<div class="image-mask absolute left-0 right-0 bottom-0 h-20 z-[1] bg-gradient-to-t from-black" onclick="$(this).siblings('img').trigger('click')"><div class="absolute left-2 bottom-2 text-white z-[2] w-[90%]"><p class="text-sm truncate filename" title="${safeName}">${safeName}</p><p class="text-xs date" title="${escapeHtml(image.human_date)}">${escapeHtml(image.date)}</p></div></div>`,
+                    });
                 }
                 if (append) {
                     $photos.append(html);
@@ -1477,8 +1515,11 @@
                 const detailTags = Array.isArray(detail?.tags)
                     ? detail.tags.map((tag) => String(tag?.name || '').trim()).filter(Boolean)
                     : [];
-                const detailOcr = String(detail?.ocr_text || '').trim();
                 const detailIntelligence = detail?.intelligence || {};
+                const detailSummary = getIntelligenceDisplaySummary({
+                    intelligence: detailIntelligence,
+                    ocr_text: detail?.ocr_text || '',
+                });
                 const detailIntelligenceLabels = Array.isArray(detailIntelligence?.labels)
                     ? detailIntelligence.labels.map((label) => String(label || '').trim()).filter(Boolean)
                     : [];
@@ -1518,7 +1559,7 @@
                             {key: '审核时间', value: detail?.reviewed_at || '-'},
                             {key: '审核人', value: detail?.reviewed_by ? `#${detail.reviewed_by}` : '-'},
                             {key: '标签', value: detailTags.length ? detailTags.join(' / ') : '-'},
-                            {key: 'OCR摘要', value: detailOcr ? (detailOcr.length > 140 ? `${detailOcr.slice(0, 140)}...` : detailOcr) : '-'},
+                            {key: '识别摘要', value: detailSummary || '-'},
                             {
                                 key: '识别状态',
                                 value: detailIntelligenceStatus
@@ -2204,17 +2245,53 @@
             };
 
             let cachedAlbumsTreeData = [];
+            const hasAnyAlbums = () => $albumsTree.find(ALBUM_TREE_ITEM).length > 0;
+            const syncUploadAvailability = () => {
+                $('#toolbar-upload-input').prop('disabled', albumsTreeFailed || !albumsTreeReady || !hasAnyAlbums());
+            };
+            const blockUploadWhenAlbumTreeEmpty = (event) => {
+                if (albumsTreeFailed) {
+                    toastr.error('相册加载失败，请刷新后重试');
+                    if (event) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                    return true;
+                }
+                if (!albumsTreeReady) {
+                    toastr.info('相册加载中，请稍后再试');
+                    if (event) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                    return true;
+                }
+                if (!hasAnyAlbums()) {
+                    toastr.warning('请先创建相册后再上传图片');
+                    if (event) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                    return true;
+                }
+                return false;
+            };
 
             const loadAlbumsTree = (page = 1, append = false, options = {}) => {
                 const skipImagesReset = Boolean(options.skipImagesReset);
                 if (!append) {
+                    albumsTreeReady = false;
+                    albumsTreeFailed = false;
                     $albumsTree.html('');
+                    syncUploadAvailability();
                 }
 
                 axios.get('{{ route("user.albums") }}', { params: { tree: 1 } })
                     .then(function(response) {
                         if (!response.data.status) return;
 
+                        albumsTreeReady = true;
+                        albumsTreeFailed = false;
                         var albums = response.data.data.albums || [];
                         cachedAlbumsTreeData = albums;
                         if (!append) {
@@ -2250,6 +2327,7 @@
                         }
 
                         syncAlbumsTreeActive();
+                        syncUploadAvailability();
 
                         if (!append && albums.length === 0) {
                             imagesLoading = false;
@@ -2267,9 +2345,16 @@
 
             const loadAlbumsTreeFlat = (page = 1, append = false, options = {}) => {
                 const skipImagesReset = Boolean(options.skipImagesReset);
+                if (!append) {
+                    albumsTreeReady = false;
+                    albumsTreeFailed = false;
+                    syncUploadAvailability();
+                }
                 axios.get('{{ route('user.albums') }}', {params: {page: page}}).then(response => {
                     if (!response.data.status) return;
 
+                    albumsTreeReady = true;
+                    albumsTreeFailed = false;
                     if (!append) {
                         $albumsTree.html('');
                     }
@@ -2297,6 +2382,7 @@
                     }
 
                     syncAlbumsTreeActive();
+                    syncUploadAvailability();
 
                     const current = response.data.data.albums.current_page;
                     const last = response.data.data.albums.last_page;
@@ -2309,6 +2395,9 @@
                         syncImagesEmptyState();
                     }
                 }).catch(() => {
+                    albumsTreeReady = false;
+                    albumsTreeFailed = true;
+                    syncUploadAvailability();
                     imagesLoading = false;
                     syncImagesLoadingState();
                     syncImagesEmptyState();
@@ -3732,6 +3821,9 @@
 
             const methods = {
                 upload() {
+                    if (blockUploadWhenAlbumTreeEmpty()) {
+                        return;
+                    }
                     $('#toolbar-upload-input').trigger('click');
                 },
                 select_all() {
@@ -3955,6 +4047,16 @@
                 const item = $(this).closest(IMAGES_ITEM).data('json') || {};
                 if (item.id) {
                     openCarousel(item.id);
+                }
+            });
+            $('[data-operate="upload"]').on('click', function (e) {
+                if (blockUploadWhenAlbumTreeEmpty(e)) {
+                    return false;
+                }
+            });
+            $('#toolbar-upload-input').on('click', function (e) {
+                if (blockUploadWhenAlbumTreeEmpty(e)) {
+                    return false;
                 }
             });
             // the operates functions

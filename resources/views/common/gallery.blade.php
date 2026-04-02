@@ -328,6 +328,11 @@
     const {
         escapeHtml,
         renderThumbButtons,
+        renderImageGridCard,
+        renderImageListRow,
+        resolveImageThumbUrl,
+        resolveImageOpenUrl,
+        hasReadyIntelligence,
         setPanelScrollLocked: _setPanelScrollLocked,
     } = window.LskyMediaCarousel || {};
 
@@ -465,43 +470,59 @@
     // ==================== Templates ====================
     function createGridItem(image) {
         var safeName = escapeHtml(image.filename || image.origin_name || '');
-        var safeThumb = escapeHtml(image.thumb_url || '');
-        var safePreview = escapeHtml(image.preview_url || image.thumb_url || image.url || '');
         var safeDate = escapeHtml(image.human_date || image.date || '');
-        var safeUrl = escapeHtml(image.url || '');
-        return '<a href="javascript:void(0)" data-id="' + image.id + '" class="images-item relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent">' +
-            '<div class="grid-hover-actions">' +
-                '<button type="button" class="grid-action-btn grid-copy-url" data-url="' + safeUrl + '" title="复制链接"><i class="fas fa-link"></i></button>' +
-                '<button type="button" class="grid-action-btn grid-download" data-url="' + safeUrl + '" title="下载"><i class="fas fa-download"></i></button>' +
-            '</div>' +
-            '<div class="image-mask absolute left-0 right-0 bottom-0 h-20 z-[1] bg-gradient-to-t from-black">' +
-                '<div class="absolute left-2 bottom-2 text-white z-[2] w-[90%]">' +
-                    '<p class="text-sm truncate filename" title="' + safeName + '">' + safeName + '</p>' +
-                    '<p class="text-xs date" title="' + safeDate + '">' + safeDate + '</p>' +
+        var safeUrl = escapeHtml(resolveImageOpenUrl(image));
+        var recognizedTag = hasReadyIntelligence(image)
+            ? '<div class="absolute top-2 left-2 z-[2] flex"><span class="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">已识别</span></div>'
+            : '';
+        return renderImageGridCard({
+            tag: 'a',
+            attributes: {
+                href: 'javascript:void(0)',
+                'data-id': image.id,
+                class: 'images-item relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent',
+            },
+            image: image,
+            alt: image.filename || image.origin_name || '',
+            width: Math.max(image.width, 200),
+            height: Math.max(image.height, 200),
+            contentHtml:
+                recognizedTag +
+                '<div class="grid-hover-actions">' +
+                    '<button type="button" class="grid-action-btn grid-copy-url" data-url="' + safeUrl + '" title="复制链接"><i class="fas fa-link"></i></button>' +
+                    '<button type="button" class="grid-action-btn grid-download" data-url="' + safeUrl + '" title="下载"><i class="fas fa-download"></i></button>' +
                 '</div>' +
-            '</div>' +
-            '<img alt="' + safeName + '" data-original="' + safePreview + '" src="' + safeThumb + '" width="' + Math.max(image.width, 200) + '" height="' + Math.max(image.height, 200) + '" loading="lazy">' +
-            '</a>';
+                '<div class="image-mask absolute left-0 right-0 bottom-0 h-20 z-[1] bg-gradient-to-t from-black">' +
+                    '<div class="absolute left-2 bottom-2 text-white z-[2] w-[90%]">' +
+                        '<p class="text-sm truncate filename" title="' + safeName + '">' + safeName + '</p>' +
+                        '<p class="text-xs date" title="' + safeDate + '">' + safeDate + '</p>' +
+                    '</div>' +
+                '</div>',
+        });
     }
 
     function createListItem(image) {
         var safeName = escapeHtml(image.filename || image.origin_name || '');
-        var safeThumb = escapeHtml(image.thumb_url || '');
-        var safeUrl = escapeHtml(image.url || '');
-        return '<div data-id="' + image.id + '" class="images-item">' +
-            '<div class="list-col list-thumb-wrap"><img class="images-list-thumb" alt="' + safeName + '" src="' + safeThumb + '" loading="lazy"></div>' +
-            '<div class="list-col list-type">' + escapeHtml((image.extension || '').toUpperCase()) + '</div>' +
-            '<div class="list-col"><span class="list-url-text" title="' + safeUrl + '">' + safeUrl + '</span></div>' +
-            '<div class="list-col">' + (image.width || 0) + ' × ' + (image.height || 0) + '</div>' +
-            '<div class="list-col">' + formatSize(image.size) + '</div>' +
-            '<div class="list-col">' + escapeHtml(image.human_date || image.date || '') + '</div>' +
-            '<div class="list-col list-ops">' +
-                '<span class="list-op-group">' +
-                    '<button type="button" class="list-op-btn list-copy-url" data-url="' + safeUrl + '"><i class="fas fa-link"></i>复制URL</button>' +
-                    '<button type="button" class="list-op-btn list-download" data-url="' + safeUrl + '"><i class="fas fa-download"></i>下载</button>' +
-                '</span>' +
-            '</div>' +
-            '</div>';
+        var safeUrl = escapeHtml(resolveImageOpenUrl(image));
+        var typeHtml = escapeHtml((image.extension || '').toUpperCase());
+        if (hasReadyIntelligence(image)) {
+            typeHtml += ' <span class="ml-2 inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">已识别</span>';
+        }
+        return renderImageListRow({
+            tag: 'div',
+            attributes: {
+                'data-id': image.id,
+                class: 'images-item',
+            },
+            contentHtml:
+                '<div class="list-col list-thumb-wrap"><img class="images-list-thumb" alt="' + safeName + '" src="' + escapeHtml(resolveImageThumbUrl(image)) + '" loading="lazy"></div>' +
+                '<div class="list-col list-type">' + typeHtml + '</div>' +
+                '<div class="list-col"><span class="list-url-text" title="' + safeUrl + '">' + safeUrl + '</span></div>' +
+                '<div class="list-col">' + (image.width || 0) + ' × ' + (image.height || 0) + '</div>' +
+                '<div class="list-col">' + formatSize(image.size) + '</div>' +
+                '<div class="list-col">' + escapeHtml(image.human_date || image.date || '') + '</div>' +
+                '<div class="list-col list-ops"><span class="list-op-group"><button type="button" class="list-op-btn list-copy-url" data-url="' + safeUrl + '"><i class="fas fa-link"></i>复制URL</button><button type="button" class="list-op-btn list-download" data-url="' + safeUrl + '"><i class="fas fa-download"></i>下载</button></span></div>',
+        });
     }
 
     var listHeadHtml = '<div class="images-list-head">' +

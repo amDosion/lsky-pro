@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\AiController as ApiAiController;
 use App\Http\Controllers\Api\V1\AiConfigController as ApiAiConfigController;
 use App\Http\Controllers\Api\V1\AiPromptTaskController as ApiAiPromptTaskController;
 use App\Http\Controllers\Api\V1\ImageController as ApiImageController;
+use App\Http\Controllers\Api\V1\ImageIntelligenceConfigController as ApiImageIntelligenceConfigController;
 use App\Http\Controllers\Api\V1\IntelligenceController as ApiIntelligenceController;
 use App\Http\Controllers\Api\V1\PerformanceController as ApiPerformanceController;
 use App\Http\Controllers\Api\V1\ProcessingController as ApiProcessingController;
@@ -98,6 +99,8 @@ Route::group(['middleware' => ['auth']], function () {
             ->name('ai.config.models.fetch');
         Route::put('ai/config/active', [ApiAiConfigController::class, 'setActive'])->name('ai.config.set-active');
         Route::put('ai/config', [ApiAiConfigController::class, 'update'])->name('ai.config.update');
+        Route::get('intelligence/config', [ApiImageIntelligenceConfigController::class, 'show'])->name('intelligence.config.show');
+        Route::put('intelligence/config', [ApiImageIntelligenceConfigController::class, 'update'])->name('intelligence.config.update');
         Route::get('intelligence/status', [ApiIntelligenceController::class, 'status'])->name('intelligence.status');
         Route::post('intelligence/backfill-preview', [ApiIntelligenceController::class, 'preview'])
             ->middleware('throttle:10,1')

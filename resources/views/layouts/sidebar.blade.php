@@ -468,7 +468,7 @@
                             <a class="submenu-item {{ request()->is('advanced/ai-prompt') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'ai-prompt']) }}" @click="advancedOpen = false"><i class="fas fa-magic"></i><span>AI提示词</span></a>
                             <a class="submenu-item {{ request()->is('advanced/ai-config') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'ai-config']) }}" @click="advancedOpen = false"><i class="fas fa-robot"></i><span>AI配置</span></a>
                             @if(Auth::user()?->is_adminer)
-                                <a class="submenu-item {{ request()->is('advanced/performance') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'performance']) }}" @click="advancedOpen = false"><i class="fas fa-gauge-high"></i><span>系统性能</span></a>
+                                <a class="submenu-item {{ request()->is('advanced/performance') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'performance']) }}" @click="advancedOpen = false"><i class="fas fa-tachometer-alt"></i><span>系统性能</span></a>
                             @endif
                             <a class="submenu-item {{ request()->is('advanced/drivers') ? 'active' : '' }}" href="{{ route('advanced.feature', ['feature' => 'drivers']) }}" @click="advancedOpen = false"><i class="fas fa-microchip"></i><span>处理驱动</span></a>
                             @if(Auth::user()?->is_adminer)

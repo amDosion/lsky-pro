@@ -23,6 +23,10 @@ services:
       PHP_POST_MAX_SIZE: ${PHP_POST_MAX_SIZE:-128M}
       PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
       HF_HOME: /opt/models/huggingface
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: ${LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT:-240}
     volumes:
       - ../..:/var/www/html
@@ -53,6 +57,10 @@ services:
       LARAVEL_WORKER_TIMEOUT: ${LARAVEL_WORKER_TIMEOUT:-600}
       LARAVEL_WORKER_QUEUES: ${LARAVEL_WORKER_QUEUES:-upload-critical,default,ai-prompt,image-process,webhook-events,image-delete}
       LARAVEL_QUEUE_CONNECTION: ${LARAVEL_QUEUE_CONNECTION:-${QUEUE_CONNECTION:-redis}}
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: ${LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT:-240}
     volumes:
       - ../..:/var/www/html
@@ -77,6 +85,10 @@ services:
       UPLOAD_PIPELINE_QUEUE_CONNECTION: redis
       PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
       LARAVEL_SCHEDULE_INTERVAL: ${LARAVEL_SCHEDULE_INTERVAL:-60}
+      LSKY_LOCAL_TAGGER_BACKEND: wd_tagger
+      LSKY_LOCAL_TAGGER_MODEL: /opt/models/huggingface/wd-vit-tagger-v3
+      LSKY_LOCAL_LEGACY_VISION_MODEL: Salesforce/blip-image-captioning-base
+      LSKY_LOCAL_MODEL_LOCAL_ONLY: "true"
       LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT: ${LSKY_LOCAL_INTELLIGENCE_PROCESS_TIMEOUT:-240}
     volumes:
       - ../..:/var/www/html

@@ -55,6 +55,36 @@ final class ConfigKey
     /** @var string AI 提供商配置 */
     const AiProviderSettings = 'ai_provider_settings';
 
+    /** @var string 图片识别引擎 */
+    const ImageIntelligenceEngine = 'image_intelligence_engine';
+
+    /** @var string 图片识别提供商 */
+    const ImageIntelligenceProvider = 'image_intelligence_provider';
+
+    /** @var string 图片识别模型 */
+    const ImageIntelligenceModel = 'image_intelligence_model';
+
+    /** @var string 图片识别是否生成标签 */
+    const ImageIntelligenceEnableLabels = 'image_intelligence_enable_labels';
+
+    /** @var string 图片识别是否生成摘要 */
+    const ImageIntelligenceEnableSummary = 'image_intelligence_enable_summary';
+
+    /** @var string 图片识别是否提取 OCR 文本 */
+    const ImageIntelligenceEnableOcrText = 'image_intelligence_enable_ocr_text';
+
+    /** @var string 上传后自动识别 */
+    const ImageIntelligenceAutoOnUpload = 'image_intelligence_auto_on_upload';
+
+    /** @var string 定时识别是否开启 */
+    const ImageIntelligenceScheduleEnabled = 'image_intelligence_schedule_enabled';
+
+    /** @var string 定时识别 cron 表达式 */
+    const ImageIntelligenceScheduleCron = 'image_intelligence_schedule_cron';
+
+    /** @var string 失败任务是否允许重试 */
+    const ImageIntelligenceRetryFailed = 'image_intelligence_retry_failed';
+
     /** @var string 邮件配置 */
     const Mail = 'mail';
 

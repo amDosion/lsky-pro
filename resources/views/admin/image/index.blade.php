@@ -530,6 +530,13 @@
                 escapeHtml,
                 copyText,
                 renderThumbButtons,
+                renderImageGridCard,
+                renderImageListRow,
+                resolveImageThumbUrl,
+                resolveImagePreviewUrl,
+                resolveImageOpenUrl,
+                hasReadyIntelligence,
+                getIntelligenceDisplaySummary,
                 normalizeLoopIndex: normalizeCarouselIndex,
                 setPanelScrollLocked: setCarouselScrollLocked,
             } = window.LskyMediaCarousel;
@@ -719,12 +726,21 @@
                 const type = escapeHtml(String(image.extension || '').toUpperCase());
                 const rawName = displayNameOf(image);
                 const name = escapeHtml(rawName);
-                const thumb = escapeHtml(image.thumb_url || '');
-                const preview = escapeHtml(image.preview_url || image.thumb_url || image.url || '');
                 const date = escapeHtml(image.created_at || '');
                 const unhealthyTag = image.is_unhealthy ? '<span class="bg-red-500 text-white rounded-md text-xs px-1">违规</span>' : '';
-                const html = `
-                    <a href="javascript:void(0)" data-id="${id}" class="admin-image-item images-item item group relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent">
+                const recognizedTag = hasReadyIntelligence(image) ? '<span class="bg-emerald-600 text-white rounded-md text-xs px-1">已识别</span>' : '';
+                const html = renderImageGridCard({
+                    tag: 'a',
+                    attributes: {
+                        href: 'javascript:void(0)',
+                        'data-id': id,
+                        class: 'admin-image-item images-item item group relative cursor-default rounded outline outline-2 outline-offset-2 outline-transparent',
+                    },
+                    image,
+                    alt: rawName,
+                    width: Math.max(Number(image.width || 0), 1),
+                    height: Math.max(Number(image.height || 0), 1),
+                    contentHtml: `
                         <button type="button" class="image-selector" title="选择">
                             <div class="p-1 text-xl sm:text-2xl">
                                 <i class="fas fa-check-circle block rounded-full bg-white text-white border border-gray-500"></i>
@@ -732,6 +748,7 @@
                         </button>
                         <div class="flex absolute top-1 left-1 z-[2] space-x-1">
                             ${unhealthyTag}
+                            ${recognizedTag}
                             <span class="bg-white rounded-md text-xs px-1">${type}</span>
                             <span class="bg-slate-900/70 text-white rounded-md text-xs px-1">#${id}</span>
                         </div>
@@ -740,9 +757,8 @@
                             <p class="item-name" title="${name}">${name}</p>
                             <p class="item-sub" title="${date}">${date}</p>
                         </div>
-                        <img src="${thumb}" data-original="${preview}" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}" loading="lazy">
-                    </a>
-                `;
+                    `,
+                });
                 const $el = $(html);
                 $el.data('json', image);
                 return $el;
@@ -751,15 +767,22 @@
             function createListRow(image) {
                 const id = String(image.id);
                 const type = escapeHtml(String(image.extension || '').toUpperCase());
-                const url = escapeHtml(image.url || '');
-                const thumb = escapeHtml(image.thumb_url || '');
+                const url = escapeHtml(resolveImageOpenUrl(image));
                 const date = escapeHtml(image.created_at || '');
                 const resolution = `${Number(image.width || 0)} × ${Number(image.height || 0)}`;
                 const name = escapeHtml(displayNameOf(image));
-                const html = `
-                    <div data-id="${id}" class="list-row item">
-                        <div class="list-col list-thumb-wrap"><img src="${thumb}" class="images-list-thumb" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}" loading="lazy"></div>
-                        <div class="list-col"><span class="list-type">${type}</span></div>
+                const typeHtml = hasReadyIntelligence(image)
+                    ? `<span class="list-type">${type}</span><span class="ml-2 inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">已识别</span>`
+                    : `<span class="list-type">${type}</span>`;
+                const html = renderImageListRow({
+                    tag: 'div',
+                    attributes: {
+                        'data-id': id,
+                        class: 'list-row item',
+                    },
+                    contentHtml: `
+                        <div class="list-col list-thumb-wrap"><img src="${escapeHtml(resolveImageThumbUrl(image))}" class="images-list-thumb" alt="${name}" width="${Math.max(Number(image.width || 0), 1)}" height="${Math.max(Number(image.height || 0), 1)}" loading="lazy"></div>
+                        <div class="list-col">${typeHtml}</div>
                         <div class="list-col list-url" title="${url}"><span class="list-url-text">${url}</span></div>
                         <div class="list-col list-resolution">${resolution}</div>
                         <div class="list-col list-size">${formatSize(image.size)}</div>
@@ -774,8 +797,8 @@
                                 <span class="text-xl"><i class="fas fa-check-circle block rounded-full bg-white text-white border border-gray-500"></i></span>
                             </button>
                         </div>
-                    </div>
-                `;
+                    `,
+                });
                 const $el = $(html);
                 $el.data('json', image);
                 return $el;
@@ -885,7 +908,7 @@
                 const tagText = Array.isArray(image.tags)
                     ? image.tags.map((tag) => String(tag?.name || '').trim()).filter(Boolean).join(' / ')
                     : '';
-                const ocrText = String(image.ocr_text || '').trim();
+                const intelligenceSummary = getIntelligenceDisplaySummary(image);
                 const groups = [
                     {
                         title: '基础信息',
@@ -918,7 +941,7 @@
                             {key: '审核时间', value: image.reviewed_at || '-'},
                             {key: '审核人', value: image.reviewed_by ? `#${image.reviewed_by}` : '-'},
                             {key: '标签', value: tagText || '-'},
-                            {key: 'OCR摘要', value: ocrText ? (ocrText.length > 140 ? `${ocrText.slice(0, 140)}...` : ocrText) : '-'},
+                            {key: '识别摘要', value: intelligenceSummary || '-'},
                         ],
                     },
                 ];

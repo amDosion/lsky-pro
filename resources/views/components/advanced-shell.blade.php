@@ -6,7 +6,7 @@
         'ai-search' => ['title' => 'AI 检索', 'icon' => 'fa-search'],
         'ai-prompt' => ['title' => 'AI 提示词', 'icon' => 'fa-magic'],
         'ai-config' => ['title' => 'AI 配置', 'icon' => 'fa-robot'],
-        'performance' => ['title' => '系统性能', 'icon' => 'fa-gauge-high'],
+        'performance' => ['title' => '系统性能', 'icon' => 'fa-tachometer-alt'],
         'drivers' => ['title' => '处理驱动', 'icon' => 'fa-microchip'],
         'reviews' => ['title' => '审核中心', 'icon' => 'fa-user-check'],
         'jobs' => ['title' => '作业中心', 'icon' => 'fa-tasks'],

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Album;
 use App\Models\AlbumShare;
 use App\Models\Image;
+use App\Services\ImageIntelligence\ImageIntelligenceViewStateService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -20,7 +21,7 @@ class GalleryController extends Controller
     /**
      * Gallery images (AJAX)
      */
-    public function images(Request $request)
+    public function images(Request $request, ImageIntelligenceViewStateService $intelligenceViewState)
     {
         $user = $request->user();
         $albumId = $request->input('album_id');
@@ -43,6 +44,7 @@ class GalleryController extends Controller
         }
 
         $query = Image::whereIn('album_id', $sharedAlbumIds)
+            ->with(['intelligenceRecord:image_id,status,source,summary,caption,ocr_text,metadata,analyzed_at'])
             ->where('is_unhealthy', false);
 
         if ($albumId) {
@@ -80,7 +82,7 @@ class GalleryController extends Controller
         $images = $query->paginate($perPage);
 
         // Transform to match the format expected by the frontend
-        $items = $images->map(function ($image) {
+        $items = $images->map(function ($image) use ($intelligenceViewState) {
             return [
                 'id' => $image->id,
                 'key' => $image->key,
@@ -99,6 +101,7 @@ class GalleryController extends Controller
                 'date' => $image->created_at->format('Y-m-d H:i'),
                 'document_viewer_url' => $image->document_viewer_url,
                 'permission' => $image->permission,
+                'intelligence' => $intelligenceViewState->buildListPayload($image->intelligenceRecord),
             ];
         });
 

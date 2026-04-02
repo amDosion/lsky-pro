@@ -65,6 +65,12 @@ class Utils
                     case ConfigKey::IsEnableRegistration:
                     case ConfigKey::IsUserNeedVerify:
                     case ConfigKey::UploadPipelineAsyncEnabled:
+                    case ConfigKey::ImageIntelligenceEnableLabels:
+                    case ConfigKey::ImageIntelligenceEnableSummary:
+                    case ConfigKey::ImageIntelligenceEnableOcrText:
+                    case ConfigKey::ImageIntelligenceAutoOnUpload:
+                    case ConfigKey::ImageIntelligenceScheduleEnabled:
+                    case ConfigKey::ImageIntelligenceRetryFailed:
                         $value = (bool) $value;
                         break;
                     case ConfigKey::Mail:
@@ -105,6 +111,12 @@ class Utils
                 case ConfigKey::IsEnableRegistration:
                 case ConfigKey::IsUserNeedVerify:
                 case ConfigKey::UploadPipelineAsyncEnabled:
+                case ConfigKey::ImageIntelligenceEnableLabels:
+                case ConfigKey::ImageIntelligenceEnableSummary:
+                case ConfigKey::ImageIntelligenceEnableOcrText:
+                case ConfigKey::ImageIntelligenceAutoOnUpload:
+                case ConfigKey::ImageIntelligenceScheduleEnabled:
+                case ConfigKey::ImageIntelligenceRetryFailed:
                     $value = (bool) $value;
                     break;
                 case ConfigKey::Mail:

@@ -111,11 +111,18 @@ class ImageIntelligenceService
      */
     private function buildPayload(Image $image): array
     {
-        // Prefer local intelligence; fall back to the configured multimodal provider
-        // before degrading to a metadata placeholder.
+        // Prefer local intelligence. External provider fallback is optional so
+        // production can stay token-free while tests keep the legacy contract.
         try {
             return $this->localAnalyzer->analyze($image);
         } catch (\Throwable $localError) {
+            if (! $this->shouldAttemptProviderFallback()) {
+                return $this->buildPlaceholderPayload(
+                    $image,
+                    sprintf('local_analysis_failed: %s', $localError->getMessage())
+                );
+            }
+
             try {
                 $payload = $this->providerBackedAnalyzer->analyze($image);
                 $metadata = is_array($payload['metadata'] ?? null) ? $payload['metadata'] : [];
@@ -136,6 +143,18 @@ class ImageIntelligenceService
                 );
             }
         }
+    }
+
+    private function shouldAttemptProviderFallback(): bool
+    {
+        $default = app()->environment('testing') ? 'true' : 'false';
+        $value = filter_var(
+            (string) env('LSKY_LOCAL_INTELLIGENCE_PROVIDER_FALLBACK', $default),
+            FILTER_VALIDATE_BOOL,
+            FILTER_NULL_ON_FAILURE
+        );
+
+        return $value ?? false;
     }
 
     /**

@@ -54,15 +54,42 @@ class LocalImageIntelligenceProcessRunner
      */
     private function environmentOverrides(): array
     {
-        return [
+        $overrides = [
             'HF_HOME' => (string) env('HF_HOME', '/opt/models/huggingface'),
             'OMP_NUM_THREADS' => '1',
             'OPENBLAS_NUM_THREADS' => '1',
             'MKL_NUM_THREADS' => '1',
             'NUMEXPR_NUM_THREADS' => '1',
+            'PYTHONUNBUFFERED' => '1',
+            'HF_HUB_DISABLE_TELEMETRY' => '1',
             'TOKENIZERS_PARALLELISM' => 'false',
             'TRANSFORMERS_NO_ADVISORY_WARNINGS' => '1',
         ];
+
+        foreach ([
+            'LSKY_LOCAL_TAGGER_BACKEND',
+            'LSKY_LOCAL_TAGGER_MODEL',
+            'LSKY_LOCAL_LEGACY_VISION_MODEL',
+            'LSKY_LOCAL_VISION_MODEL',
+            'LSKY_LOCAL_MODEL_LOCAL_ONLY',
+            'LSKY_LOCAL_TAGGER_GENERAL_THRESHOLD',
+            'LSKY_LOCAL_TAGGER_MAX_TAGS',
+            'LSKY_LOCAL_OCR_LANG',
+            'LSKY_LOCAL_OCR_MAX_DIMENSION',
+            'LSKY_LOCAL_OCR_TIMEOUT',
+            'LSKY_LOCAL_CAPTION_MAX_DIMENSION',
+            'LSKY_LOCAL_CAPTION_MAX_NEW_TOKENS',
+            'LSKY_LOCAL_CAPTION_NUM_BEAMS',
+        ] as $key) {
+            $value = env($key);
+            if ($value === null) {
+                continue;
+            }
+
+            $overrides[$key] = (string) $value;
+        }
+
+        return $overrides;
     }
 
     private function timeoutSeconds(): int

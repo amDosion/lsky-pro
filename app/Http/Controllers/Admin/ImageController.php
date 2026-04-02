@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\AuditsOperations;
 use App\Http\Controllers\Controller;
 use App\Models\Image;
 use App\Models\User;
+use App\Services\ImageIntelligence\ImageIntelligenceViewStateService;
 use App\Services\UserService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,7 @@ class ImageController extends Controller
 {
     use AuditsOperations;
 
-    public function index(Request $request)
+    public function index(Request $request, ImageIntelligenceViewStateService $intelligenceViewState)
     {
         $keywords = $request->query('keywords');
         $reviewStatus = (string) $request->query('review_status', '');
@@ -30,7 +31,7 @@ class ImageController extends Controller
         }
         $images = Image::query()->with(['user' => function (BelongsTo $belongsTo) {
             $belongsTo->withSum('images', 'size');
-        }, 'album', 'group', 'strategy', 'tags:id,name'])->when($keywords, function (Builder $builder, $keywords) {
+        }, 'album', 'group', 'strategy', 'tags:id,name', 'intelligenceRecord:image_id,status,source,summary,caption,ocr_text,metadata,analyzed_at'])->when($keywords, function (Builder $builder, $keywords) {
             $words = [];
             $qualifiers = [
                 'name:', 'uid:', 'album:', 'group:', 'strategy:', 'email:', 'extension:', 'md5:', 'sha1:', 'ip:', 'is:', 'order:',
@@ -117,7 +118,7 @@ class ImageController extends Controller
         })->when(in_array($reviewStatus, ImageReviewStatus::values(), true), function (Builder $builder) use ($reviewStatus) {
             $builder->where('review_status', $reviewStatus);
         })->latest()->paginate($perPage);
-        $images->getCollection()->each(function (Image $image) {
+        $images->getCollection()->each(function (Image $image) use ($intelligenceViewState) {
             $image->append('url', 'pathname', 'thumb_url', 'preview_url', 'filename');
             if ($image->album) {
                 $image->album->setVisible(['name']);
@@ -131,6 +132,8 @@ class ImageController extends Controller
             if ($image->relationLoaded('tags')) {
                 $image->tags->makeVisible(['name']);
             }
+            $image->setAttribute('intelligence', $intelligenceViewState->buildListPayload($image->intelligenceRecord));
+            $image->unsetRelation('intelligenceRecord');
         });
 
         $images->appends([
