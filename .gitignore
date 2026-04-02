@@ -53,3 +53,4 @@ composer-setup.php
 /models/
 /public/jpeg/
 *.patch
+.tmp-phpunit-Ml11R7/
